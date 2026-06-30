@@ -55,7 +55,6 @@ GitHub 활동을 자동 수집·집계하여 데이터 기반 회고를 돕고, 
 
 - NestJS 11
 - Passport (`passport-github2`) — GitHub OAuth
-- `@nestjs/jwt` — 인증 토큰
 - `@nestjs/swagger` — API 문서
 - LLM SDK — 회고 초안 스트리밍 생성 (미정)
 

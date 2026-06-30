@@ -75,11 +75,11 @@ backend/
 
 | 계층        | 위치                     | 역할                                                                  |
 | ----------- | ------------------------ | --------------------------------------------------------------------- |
-| controller  | `apps/api`               | HTTP 요청 수신. thin 하게 유지                                        |
-| scheduler   | `apps/batch`             | `@Cron` 진입점 (batch의 controller 역할)                              |
+| controller  | `apps/api`               | HTTP 요청 수신                                                        |
+| scheduler   | `apps/batch`             | `@Cron` 진입점                                                        |
 | service     | `apps/api`, `apps/batch` | 비즈니스 흐름. MikroORM EntityRepository를 직접 주입                  |
 | entity      | `libs/entity`            | 데이터 모델. api·batch가 **같은 테이블**을 쓰므로 한 번만 정의해 공유 |
-| 공통 인프라 | `libs/shared`            | config, logger, 공통 타입 등 framework 무관 코드                      |
+| 공통 인프라 | `libs/shared`            | config, logger, 공통 타입                                             |
 
 > **entity를** `libs`**에 두는 이유**: api와 batch는 동일한 PostgreSQL 테이블을 다루므로 entity가 같습니다.
 > 각 앱에 중복 정의하면 MikroORM 매핑이 이중화되고 스키마 불일치 위험이 생깁니다.
@@ -87,7 +87,7 @@ backend/
 >
 > `libs/entity/src` 아래는 실제 테이블 엔티티(`domain/`)와 그 외 분류(`base/`, `embeddables/`, `enums/`)를 구분합니다.
 
-### Repository 추상화는 지금 만들지 않는다
+### Repository 추상화는 만들지 않는다
 
 ORM은 **MikroORM**을 사용하며, `service`에서 MikroORM의 `EntityRepository`를 직접 주입받아 사용합니다.
 
@@ -104,8 +104,30 @@ export class RetrospectService {
 }
 ```
 
-별도 Repository 인터페이스/구현 분리는, 복잡한 영속성 로직이 실제로 생길 때 도입합니다.  
-필요하면 MikroORM이 지원하는 **커스텀 리포지토리**(`EntityRepository` 상속)로 확장하면 됩니다.
+이 구조는 `service`가 MikroORM에 직접 의존하므로 **DIP(의존성 역전 원칙)를 위반**합니다.
+
+Repository 인터페이스를 추출하면 ORM 교체와 테스트 mock이 쉬워지지만, 이 프로젝트에서는 다음 이유로 추상화를 도입하지 않습니다.
+
+- ORM을 교체할 가능성이 낮습니다.
+- MikroORM은 테스트용 PGlite를 공식 지원하므로 인터페이스 없이도 테스트가 가능합니다.
+- 추상화 레이어가 늘어날수록 1인 프로젝트에서 유지 비용이 커집니다.
+
+쿼리 빌더를 사용하는 시점에 커스텀 리포지토리(`EntityReadRepository` 상속)로 분리합니다.
+
+```ts
+// retrospect.repository.ts
+import { EntityReadRepository } from "@mikro-orm/core";
+import { Retrospect } from "@app/entity/domain/retrospect/retrospect.entity";
+
+export class RetrospectRepository extends EntityReadRepository<Retrospect> {
+  async findByUserId(userId: string): Promise<Retrospect[]> {
+    return this.createQueryBuilder()
+      .where({ userId })
+      .orderBy({ createdAt: "DESC" })
+      .getResultList();
+  }
+}
+```
 
 ### 경계 규칙
 

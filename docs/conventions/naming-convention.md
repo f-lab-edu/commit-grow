@@ -18,7 +18,7 @@
 
 ## 백엔드 (NestJS)
 
-> NestJS 공식 컨벤션을 따릅니다. (`nest g` CLI가 자동 생성하는 형식과 100% 일치)
+> NestJS 공식 컨벤션을 따릅니다.
 
 ### 기본 원칙
 
@@ -29,7 +29,7 @@ retrospect.controller.ts
 retrospect.service.ts
 retrospect.module.ts
 retrospect.entity.ts
-retrospect.repository.ts
+retrospect.read-repository.ts
 retrospect.scheduler.ts
 create-retrospect.dto.ts
 auth.guard.ts
@@ -44,7 +44,7 @@ logging.interceptor.ts
 | 서비스 | `.service.ts` | `retrospect.service.ts` |
 | 모듈 | `.module.ts` | `retrospect.module.ts` |
 | 엔티티 | `.entity.ts` | `retrospect.entity.ts` |
-| 레포지토리 | `.repository.ts` | `retrospect.repository.ts` |
+| 레포지토리 | `.read-repository.ts` | `retrospect.read-repository.ts` |
 | DTO | `.dto.ts` | `create-retrospect.dto.ts` |
 | 스케줄러 | `.scheduler.ts` | `retrospect.scheduler.ts` |
 | 가드 | `.guard.ts` | `auth.guard.ts` |
