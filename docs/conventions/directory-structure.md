@@ -23,14 +23,14 @@ commit-grow/
 ## 백엔드 (NestJS Monorepo Mode)
 
 API 서버와 배치는 NestJS 공식 모노레포 모드(`apps` + `libs`)로 구성합니다.
-각 앱은 **기능(feature) 단위 폴더**로 내부를 구성하며, 한 폴더 안에 그 기능의 controller / service / entity / dto / 테스트가 모두 들어갑니다.
+각 앱은 **도메인 단위 폴더**로 내부를 구성하며, 한 폴더 안에 그 도메인의 controller / service / dto / 테스트가 모두 들어갑니다.
 
 ```
 backend/
 ├── apps/
 │   ├── api/
 │   │   └── src/
-│   │       ├── retrospect/                 # 기능 단위 폴더
+│   │       ├── retrospect/                 # 도메인 단위 폴더
 │   │       │   ├── retrospect.controller.ts
 │   │       │   ├── retrospect.service.ts        # MikroORM EntityRepository를 직접 주입
 │   │       │   ├── dto/
@@ -39,7 +39,7 @@ backend/
 │   │       │   └── retrospect.service.spec.ts   # 단위 테스트는 코드 옆에(colocation)
 │   │       ├── app.module.ts
 │   │       └── main.ts                          # API 부트스트랩
-│   │   └── test/
+│   │   └── e2e-test/
 │   │       └── retrospect.e2e-spec.ts           # E2E 테스트만 분리
 │   │
 │   └── batch/
@@ -138,8 +138,8 @@ export class RetrospectRepository extends EntityReadRepository<Retrospect> {
 
 테스트는 **코드 옆에 두는(colocation)** 방식을 기본으로 합니다.
 
-- **단위 테스트**(`*.spec.ts`) → 대상 코드와 **같은 feature 폴더**
-- **E2E 테스트**(`*.e2e-spec.ts`) → 각 앱의 `test/` 디렉터리
+- **단위 테스트**(`*.spec.ts`) → 대상 코드와 **같은 도메인 폴더**
+- **E2E 테스트**(`*.e2e-spec.ts`) → 각 앱의 `e2e-test/` 디렉터리
 
 ```
 apps/api/
@@ -147,7 +147,7 @@ apps/api/
 │   └── retrospect/
 │       ├── retrospect.service.ts
 │       └── retrospect.service.spec.ts    # 단위 — 코드 옆
-└── test/
+└── e2e-test/
     └── retrospect.e2e-spec.ts            # E2E — 분리
 ```
 
