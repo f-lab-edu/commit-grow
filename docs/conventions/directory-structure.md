@@ -4,12 +4,11 @@
 
 ## 설계 원칙
 
-업계 모범 사례(NestJS 공식, Nx, 다수 실무 사례)와 1인 프로젝트의 현실을 함께 반영합니다.
+NestJS 공식문서와 1인 프로젝트의 현실을 고려하여 설계합니다.
 
 1. **기능(feature) 단위로 묶는다.** 레이어(controller/service/repository)별로 폴더를 나누지 않는다. 기능 하나가 폴더 하나다.
 2. **과설계하지 않는다.** 별도 Repository 추상화 레이어, 도메인 전용 라이브러리는 _지금_ 만들지 않는다. ORM(MikroORM)이 제공하는 `EntityRepository`를 그대로 사용한다.
-3. **공유는 증명될 때 추출한다.** `libs`에 도메인 코드를 미리 넣지 않는다. api·batch가 _실제로_ 같은 코드를 쓰는 게 확인된 순간에만 `libs`로 끌어올린다.
-4. `libs`**는 절대** `apps`**를 import하지 않는다.** (lint로 강제)
+3. `libs`**는 절대** `apps`**를 import하지 않는다.** (lint로 강제)
 
 ## 최상위 구조
 
@@ -151,8 +150,9 @@ docs/
 
 ## 참고 자료
 
-- [NestJS — Monorepo (Workspaces)](https://docs.nestjs.com/cli/monorepo) — apps/libs 공식 구조
-- [Nx — Enforce Module Boundaries](https://nx.dev/docs/features/enforce-module-boundaries) — libs↔apps 경계 강제
-- [NestJS Project Structure Best Practices 2026 (Encore)](https://encore.dev/articles/nestjs-project-structure-best-practices) — feature 단위 조직화
-- [Repository Pattern in NestJS: Do It Right or Go Home](https://dev.to/adamthedeveloper/repository-pattern-in-nestjs-do-it-right-or-go-home-268f) — Repository 추상화 판단 기준
-- [Software Architecture Is Overrated, Clear and Simple Design Is Underrated (HN)](https://news.ycombinator.com/item?id=21001676) — 과설계 경계
+- [NestJS 공식 — Monorepo (Workspaces)](https://docs.nestjs.com/cli/monorepo) — apps/libs 공식 구조
+- [NestJS 공식 — Modules](https://docs.nestjs.com/modules) — 모듈 경계, exports 설계
+- [NestJS 공식 — Testing](https://docs.nestjs.com/fundamentals/testing) — 단위/E2E 테스트 파일 배치
+- [nestjs/nest 공식 레포 샘플](https://github.com/nestjs/nest/tree/master/sample/01-cats-app/src/cats) — colocation 예시 (`.spec.ts` 위치)
+- [jmcdo29/testing-nestjs](https://github.com/jmcdo29/testing-nestjs) — NestJS 코어팀 멤버의 테스트 방법론 레포
+- [MikroORM 공식 — Usage with NestJS](https://mikro-orm.io/docs/usage-with-nestjs) — EntityRepository 주입 방식
