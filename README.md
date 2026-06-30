@@ -48,25 +48,46 @@ GitHub 활동을 자동 수집·집계하여 데이터 기반 회고를 돕고, 
 
 - NodeJS 24.18 LTS
 - PostgreSQL 18.4
-- Redis
+- MikroORM — API·배치 공통 ORM
+- `class-validator` + `class-transformer` — DTO 검증
 
 ### API 서버
 
 - NestJS 11
-- microORM
-- Passport
+- Passport (`passport-github2`) — GitHub OAuth
+- `@nestjs/jwt` — 인증 토큰
+- `@nestjs/swagger` — API 문서
+- LLM SDK — 회고 초안 스트리밍 생성 (미정)
 
 ### 배치
 
-고민중입니다.
+- NestJS 11
+- `@nestjs/schedule` — 크론 스케줄러
+- 이메일 발송 라이브러리 — 주간 리포트 (미정)
 
-### 프론트 엔드
+### 프론트엔드
 
-고민중입니다.
+> **미정** — 스택 확정 후 작성합니다.
+
+### 인프라
+
+- Docker + Docker Compose
+- GitHub Actions — CI/CD (workflow 구성 예정)
+
+## 5. 개발환경
+
+| 도구              | 비고                    |
+| ----------------- | ----------------------- |
+| Node.js 24.18 LTS | fnm으로 버전 고정       |
+| pnpm              | 패키지 매니저           |
+| Docker Desktop    | 로컬 PostgreSQL · Redis |
+| Cursor            | AI 코드 에디터          |
+| Claude Code       | AI 코딩 에이전트        |
+| ESLint + Prettier | NestJS 기본 설정        |
 
 ---
 
-## 5. 주요 기능
+## 6. 주요 기능
 
 ### GitHub 연동 & 활동 수집
 
