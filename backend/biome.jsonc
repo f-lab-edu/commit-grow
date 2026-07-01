@@ -16,14 +16,15 @@
 		"enabled": true,
 		"rules": {
 			// recommended 프리셋 대신 아래 규칙만 명시적으로 적용 (ESLint 마이그레이션 결과)
-			"preset": "recommended",
+			"preset": "none",
 
 			// 복잡도 관련 규칙
 			"complexity": {
 				"noBannedTypes": "error", // {} / Object / Function 등 금지된 타입 사용 금지
 				"noUselessThisAlias": "error", // 의미 없는 this 별칭 금지
 				"noUselessTypeConstraint": "error", // 불필요한 extends unknown / extends any 금지
-				"useArrowFunction": "off" // function → 화살표 함수 강제 변환 끔
+				"useArrowFunction": "off", // function → 화살표 함수 강제 변환 끔
+				"noStaticOnlyClass": "off"
 			},
 
 			// 정확성 관련 규칙
@@ -71,8 +72,8 @@
 				"useNamespaceKeyword": "error" // namespace 키워드 대신 module 키워드 사용
 			}
 		},
-		// 린트 대상 파일
-		"includes": ["*.ts"]
+		// 린트 대상 파일 — *.ts는 루트만 매칭하므로 **/*.ts 사용
+		"includes": ["**/*.ts"]
 	},
 
 	// JavaScript/TypeScript 전용 포맷 옵션
@@ -98,7 +99,7 @@
 		},
 		{
 			// TypeScript 파일 — @typescript-eslint/recommended 일부 규칙
-			"includes": ["*.ts"],
+			"includes": ["**/*.ts"],
 			"linter": {
 				"rules": {
 					"complexity": {
@@ -151,7 +152,7 @@
 		},
 		{
 			// (중복) TypeScript 파일 override — 마이그레이션 시 생성됨
-			"includes": ["*.ts", "*.tsx", "*.mts", "*.cts"],
+			"includes": ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
 			"linter": {
 				"rules": {
 					"complexity": { "noArguments": "error" },
