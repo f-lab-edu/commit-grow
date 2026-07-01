@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:18.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: commit_grow
+      POSTGRES_PASSWORD: commit_grow
+      POSTGRES_DB: commit_grow
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+
+volumes:
+  postgres-data:

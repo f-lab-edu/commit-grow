@@ -16,7 +16,7 @@
 		"enabled": true,
 		"rules": {
 			// recommended 프리셋 대신 아래 규칙만 명시적으로 적용 (ESLint 마이그레이션 결과)
-			"preset": "none",
+			"preset": "recommended",
 
 			// 복잡도 관련 규칙
 			"complexity": {
@@ -76,7 +76,10 @@
 	},
 
 	// JavaScript/TypeScript 전용 포맷 옵션
-	"javascript": { "formatter": { "quoteStyle": "single" } },
+	"javascript": {
+		"formatter": { "quoteStyle": "single" },
+		"parser": { "unsafeParameterDecoratorsEnabled": true }
+	},
 
 	// 파일 패턴별 설정 덮어쓰기 (ESLint 마이그레이션 결과)
 	"overrides": [

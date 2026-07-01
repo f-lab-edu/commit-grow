@@ -1,10 +1,11 @@
+import { MikroOrmModule } from "@mikro-orm/nestjs";
 import { Module } from "@nestjs/common";
+import mikroOrmConfig from "../../../mikro-orm.config";
 import { ApiController } from "./api.controller";
-import { ApiService } from "./api.service";
 
 @Module({
-	imports: [],
+	imports: [MikroOrmModule.forRoot(mikroOrmConfig)],
 	controllers: [ApiController],
-	providers: [ApiService],
+	providers: [],
 })
 export class ApiModule {}
