@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { EnviromentUtil } from '@app/environment/EnviromentUtil';
 import {
 	BadRequestException,

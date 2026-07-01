@@ -12,7 +12,6 @@
 		"start:dev": "nest start --watch api",
 		"start:debug": "nest start --debug --watch api",
 		"start:prod": "node dist/apps/api/main",
-
 		"start:local-debug": "NODE_ENV=local pnpm start:debug",
 		"lint": "biome check --write .",
 		"test": "jest",
