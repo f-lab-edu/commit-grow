@@ -1,0 +1,189 @@
+{
+	// 에디터 자동완성·유효성 검사용 스키마 (Biome 실행과 무관)
+	"$schema": "https://biomejs.dev/schemas/2.5.1/schema.json",
+
+	// Git 연동 — 변경 파일 우선 처리, .gitignore 규칙 반영
+	"vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+
+	// Biome 처리 대상 — **: 전체, !!**/dist: dist 제외
+	"files": { "includes": ["**", "!!**/dist", "!!**/node_modules"] },
+
+	// 코드 포맷터 — 들여쓰기·줄바꿈 등 스타일 정리
+	"formatter": { "enabled": true, "indentStyle": "tab" },
+
+	// 린터 — 코드 품질·잠재 버그 검사
+	"linter": {
+		"enabled": true,
+		"rules": {
+			// recommended 프리셋 대신 아래 규칙만 명시적으로 적용 (ESLint 마이그레이션 결과)
+			"preset": "none",
+
+			// 복잡도 관련 규칙
+			"complexity": {
+				"noBannedTypes": "error", // {} / Object / Function 등 금지된 타입 사용 금지
+				"noUselessThisAlias": "error", // 의미 없는 this 별칭 금지
+				"noUselessTypeConstraint": "error", // 불필요한 extends unknown / extends any 금지
+				"useArrowFunction": "off" // function → 화살표 함수 강제 변환 끔
+			},
+
+			// 정확성 관련 규칙
+			"correctness": {
+				"noUnusedVariables": "error" // 사용하지 않는 변수 금지
+			},
+
+			// 실험적(nursery) 규칙 — 아직 안정화 전, 향후 변경 가능
+			"nursery": {
+				"noExcessiveNestedCallbacks": {
+					"level": "error",
+					"options": { "max": 5 } // 콜백 중첩 최대 5단계 (ESLint max-nested-callbacks)
+				},
+				"noFloatingPromises": "error", // await 없이 방치된 Promise 금지
+				"noMisusedPromises": "error", // Promise를 잘못된 위치에서 사용 금지
+				"useExplicitReturnType": "off", // 함수 반환 타입 명시 강제
+				"useExplicitType": "off" // 변수 타입 명시 강제
+			},
+
+			// 스타일 관련 규칙
+			"style": {
+				"noCommonJs": "error", // require/module.exports 금지 (ESM 사용)
+				"noNamespace": "error", // TypeScript namespace 금지
+				"noNestedTernary": "error", // 중첩 삼항 연산자
+				"noUselessElse": "error", // return 이후 불필요한 else 금지 (ESLint no-else-return)
+				"useArrayLiterals": "error", // new Array() 대신 [] 사용
+				"useAsConstAssertion": "error", // as const 단언 권장
+				"useBlockStatements": "warn", // 단일문 if/for 등에 중괄호 권장 (ESLint curly)
+				"useConsistentArrowReturn": "error" // 화살표 함수 본문 간결화 (ESLint arrow-body-style)
+			},
+
+			// 의심스러운 패턴 관련 규칙
+			"suspicious": {
+				"noConsole": "error", // console.* 사용 금지
+				"noDoubleEquals": "error", // == / != 금지, === / !== 사용 (ESLint eqeqeq)
+				"noDuplicateEnumValues": "error", // enum 중복 값 금지
+				"noEmptyBlockStatements": "error", // 빈 블록 금지 (ESLint no-empty-function)
+				"noExplicitAny": "off", // any 타입 허용
+				"noExtraNonNullAssertion": "error", // 불필요한 ! 단언 금지
+				"noMisleadingInstantiator": "error", // 잘못된 new 사용 금지
+				"noNonNullAssertedOptionalChain": "error", // foo?.bar! 패턴 금지
+				"noTsIgnore": "error", // @ts-ignore 금지
+				"noUnsafeDeclarationMerging": "error", // interface + class 병합 금지
+				"noUnusedExpressions": "off", // 미사용 표현식 허용
+				"useNamespaceKeyword": "error" // namespace 키워드 대신 module 키워드 사용
+			}
+		},
+		// 린트 대상 파일
+		"includes": ["*.ts"]
+	},
+
+	// JavaScript/TypeScript 전용 포맷 옵션
+	"javascript": { "formatter": { "quoteStyle": "single" } },
+
+	// 파일 패턴별 설정 덮어쓰기 (ESLint 마이그레이션 결과)
+	"overrides": [
+		{
+			// 테스트 파일 — jest-formatting 규칙 대체 (현재 추가 규칙 없음)
+			"includes": [
+				"**/*.test.*",
+				"**/*_test.*",
+				"**/*Test.*",
+				"**/*.spec.*",
+				"**/*_spec.*",
+				"**/*Spec.*",
+				"**/__tests__/*"
+			],
+			"linter": { "rules": {} }
+		},
+		{
+			// TypeScript 파일 — @typescript-eslint/recommended 일부 규칙
+			"includes": ["*.ts"],
+			"linter": {
+				"rules": {
+					"complexity": {
+						"noArguments": "error" // arguments 객체 사용 금지
+					},
+					"correctness": {
+						// TypeScript 컴파일러가 검사하므로 Biome 규칙은 끔
+						"noConstAssign": "off",
+						"noGlobalObjectCalls": "off",
+						"noInvalidBuiltinInstantiation": "off",
+						"noInvalidConstructorSuper": "off",
+						"noSetterReturn": "off",
+						"noUndeclaredVariables": "off",
+						"noUnreachable": "off",
+						"noUnreachableSuper": "off"
+					},
+					"style": {
+						"useConst": "error", // let → const 권장
+						"useSpreadOverApply": "error" // fn.apply() 대신 spread 사용
+					},
+					"suspicious": {
+						// TypeScript 컴파일러가 검사하므로 Biome 규칙은 끔
+						"noClassAssign": "off",
+						"noDuplicateClassMembers": "off",
+						"noDuplicateObjectKeys": "off",
+						"noDuplicateParameters": "off",
+						"noFunctionAssign": "off",
+						"noImportAssign": "off",
+						"noRedeclare": "off",
+						"noUnsafeNegation": "off",
+						"noVar": "error", // var 사용 금지
+						"noWith": "off",
+						"useGetterReturn": "off"
+					}
+				}
+			}
+		},
+		{
+			// (중복) 테스트 파일 override — 마이그레이션 시 생성됨
+			"includes": [
+				"**/*.test.*",
+				"**/*_test.*",
+				"**/*Test.*",
+				"**/*.spec.*",
+				"**/*_spec.*",
+				"**/*Spec.*",
+				"**/__tests__/*"
+			],
+			"linter": { "rules": {} }
+		},
+		{
+			// (중복) TypeScript 파일 override — 마이그레이션 시 생성됨
+			"includes": ["*.ts", "*.tsx", "*.mts", "*.cts"],
+			"linter": {
+				"rules": {
+					"complexity": { "noArguments": "error" },
+					"correctness": {
+						"noConstAssign": "off",
+						"noGlobalObjectCalls": "off",
+						"noInvalidBuiltinInstantiation": "off",
+						"noInvalidConstructorSuper": "off",
+						"noSetterReturn": "off",
+						"noUndeclaredVariables": "off",
+						"noUnreachable": "off",
+						"noUnreachableSuper": "off"
+					},
+					"style": { "useConst": "error", "useSpreadOverApply": "error" },
+					"suspicious": {
+						"noClassAssign": "off",
+						"noDuplicateClassMembers": "off",
+						"noDuplicateObjectKeys": "off",
+						"noDuplicateParameters": "off",
+						"noFunctionAssign": "off",
+						"noImportAssign": "off",
+						"noRedeclare": "off",
+						"noUnsafeNegation": "off",
+						"noVar": "error",
+						"noWith": "off",
+						"useGetterReturn": "off"
+					}
+				}
+			}
+		}
+	],
+
+	// 에디터 보조 액션 — 저장 시 import 정렬 등
+	"assist": {
+		"enabled": true,
+		"actions": { "source": { "organizeImports": "on" } }
+	}
+}
