@@ -8,9 +8,9 @@
 	"scripts": {
 		"build": "nest build",
 		"format": "biome format --write .",
-		"start": "nest start",
-		"start:dev": "nest start --watch",
-		"start:debug": "nest start --debug --watch",
+		"start": "nest start api",
+		"start:dev": "nest start --watch api",
+		"start:debug": "nest start --debug --watch api",
 		"start:prod": "node dist/apps/api/main",
 		"lint": "biome check --write .",
 		"test": "jest",
