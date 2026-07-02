@@ -7,6 +7,7 @@ import {
 	VersioningType,
 } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino/Logger';
 import { ApiModule } from './api.module';
 
@@ -28,6 +29,16 @@ async function bootstrap() {
 				new BadRequestException(),
 		}),
 	);
+
+	if (environment.isNotProduction) {
+		const config = new DocumentBuilder()
+			.setTitle('Commit Grow API')
+			.setDescription('GitHub 활동 수집 및 AI 회고 플랫폼 API 문서')
+			.setVersion('1.0')
+			.build();
+		const document = SwaggerModule.createDocument(app, config);
+		SwaggerModule.setup('api-docs', app, document);
+	}
 
 	app.setGlobalPrefix('api');
 	app.enableVersioning({

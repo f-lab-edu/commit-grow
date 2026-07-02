@@ -21,4 +21,8 @@ export class Environment {
 	get isLocalDevelopment(): boolean {
 		return this.environment === 'local';
 	}
+
+	get isNotProduction(): boolean {
+		return this.environment === 'production';
+	}
 }
