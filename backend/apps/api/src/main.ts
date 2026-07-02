@@ -7,6 +7,7 @@ import {
 	VersioningType,
 } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { Logger } from 'nestjs-pino/Logger';
 import { ApiModule } from './api.module';
 
 const DEFAULT_PORT = 3000;
@@ -35,6 +36,11 @@ async function bootstrap() {
 	});
 
 	await app.listen(environment.server.port || DEFAULT_PORT);
+
+	const logger = app.get(Logger);
+	logger.log(
+		`API 서버 작동: ${environment.isLocalDevelopment ? `http://localhost:${environment.server.port}` : ''}`,
+	);
 }
 
 bootstrap();

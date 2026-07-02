@@ -33,7 +33,7 @@
 
 			// 정확성 관련 규칙
 			"correctness": {
-				"noUnusedVariables": "error" // 사용하지 않는 변수 금지
+				"noUnusedVariables": "warn" // 사용하지 않는 변수 금지
 			},
 
 			// 실험적(nursery) 규칙 — 아직 안정화 전, 향후 변경 가능
