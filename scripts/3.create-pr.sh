@@ -42,9 +42,9 @@ BRANCH_TYPE="$match[1]"
 ISSUE_NUMBER="$match[2]"
 
 case "$BRANCH_TYPE" in
-  feat) TEMPLATE_FILE="feature.md"; TITLE_PREFIX="[✨ Feature] "; LABEL="✨ feature" ;;
-  fix) TEMPLATE_FILE="bug.md"; TITLE_PREFIX="[🐛 Bug] "; LABEL="🐛 bug" ;;
-  refactor) TEMPLATE_FILE="refactor.md"; TITLE_PREFIX="[🔧 Refactor] "; LABEL="🔧 refactor" ;;
+  feat) TEMPLATE_FILE="feature.md"; TITLE_PREFIX="[✨ Feature] "; LABEL="✨ feature"; ISSUE_HEADING="배경 및 목적" ;;
+  fix) TEMPLATE_FILE="bug.md"; TITLE_PREFIX="[🐛 Bug] "; LABEL="🐛 bug"; ISSUE_HEADING="현상" ;;
+  refactor) TEMPLATE_FILE="refactor.md"; TITLE_PREFIX="[🔧 Refactor] "; LABEL="🔧 refactor"; ISSUE_HEADING="배경 및 목적" ;;
 esac
 
 TEMPLATE_PATH="$REPO_ROOT/.github/PULL_REQUEST_TEMPLATE/$TEMPLATE_FILE"
@@ -108,9 +108,46 @@ if [[ -n "$EXISTING_PR_URL" ]]; then
   exit 1
 fi
 
+ISSUE_BODY="$(gh issue view "$ISSUE_NUMBER" --json body --jq '.body')"
+ISSUE_SECTION="$(awk -v heading="## ${ISSUE_HEADING}" '
+  index($0, heading) == 1 { flag=1; next }
+  index($0, "## ") == 1 { flag=0 }
+  flag { print }
+' <<< "$ISSUE_BODY")"
+
+BODY_CONTENT="$(cat "$TEMPLATE_PATH")"
+if [[ -n "${ISSUE_SECTION//[[:space:]]/}" ]]; then
+  TMP_ISSUE_SECTION="$(mktemp)"
+  print -r -- "$ISSUE_SECTION" > "$TMP_ISSUE_SECTION"
+  # PR 템플릿의 "<!-- 주석 -->\n## 헤딩" 구조에서, 이슈 본문의 같은 이름 섹션 내용을
+  # 헤딩 바로 아래에 끼워 넣고 기존 주석/placeholder는 제거한다.
+  BODY_CONTENT="$(print -r -- "$BODY_CONTENT" | awk -v heading="## ${ISSUE_HEADING}" '
+    BEGIN{hold=""}
+    {
+      if ($0 ~ /^<!--.*-->[ \t]*$/) { hold=$0; next }
+      if (index($0, heading) != 1 && hold != "") { print hold }
+      hold=""
+      print
+    }
+  ' | awk -v content_file="$TMP_ISSUE_SECTION" -v heading="## ${ISSUE_HEADING}" '
+    index($0, heading) == 1 {
+      print
+      while ((getline line < content_file) > 0) print line
+      close(content_file)
+      print ""
+      skip=1
+      next
+    }
+    index($0, "## ") == 1 { skip=0 }
+    skip { next }
+    { print }
+  ')"
+  rm -f "$TMP_ISSUE_SECTION"
+fi
+
 TMP_BODY="$(mktemp)"
 trap 'rm -f "$TMP_BODY"' EXIT
-sed "s/^Closes #\$/Closes #${ISSUE_NUMBER}/" "$TEMPLATE_PATH" > "$TMP_BODY"
+print -r -- "$BODY_CONTENT" | sed "s/^Closes #\$/Closes #${ISSUE_NUMBER}/" > "$TMP_BODY"
 
 gh pr create --web --title "$TITLE_PREFIX" --body-file "$TMP_BODY" --base "$BASE_BRANCH" --label "$LABEL"
 

@@ -5,7 +5,7 @@ title: "[🔧 Refactor] "
 labels: "🔧 refactor"
 ---
 
-## 변경 동기
+## 배경 및 목적
 <!-- 왜 지금 바꿔야 하는가 -->
 
 ## AS-IS
