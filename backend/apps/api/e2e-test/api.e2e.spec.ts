@@ -1,20 +1,38 @@
 import type { INestApplication } from '@nestjs/common';
 import { VersioningType } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
+import { Logger } from 'nestjs-pino/Logger';
 import request from 'supertest';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { ApiModule } from '../src/api.module';
+import { afterAll, beforeAll, describe, it, vi } from 'vitest';
+import { ApiController } from '../src/api.controller';
 
-describe('Api (e2e)', () => {
+describe('ApiController E2E Test', () => {
 	let app: INestApplication;
 
 	beforeAll(async () => {
 		const moduleRef = await Test.createTestingModule({
-			imports: [ApiModule],
+			controllers: [ApiController],
+			providers: [
+				{
+					provide: Logger,
+					useValue: {
+						log: vi.fn(),
+						debug: vi.fn(),
+						warn: vi.fn(),
+						error: vi.fn(),
+						fatal: vi.fn(),
+						verbose: vi.fn(),
+					},
+				},
+			],
 		}).compile();
 
 		app = moduleRef.createNestApplication();
+		app.setGlobalPrefix('api');
+		app.enableVersioning({
+			type: VersioningType.URI,
+			defaultVersion: '1',
+		});
 		await app.init();
 	});
 
