@@ -23,6 +23,6 @@ export class Environment {
 	}
 
 	get isNotProduction(): boolean {
-		return this.environment === 'production';
+		return this.environment !== 'production';
 	}
 }
