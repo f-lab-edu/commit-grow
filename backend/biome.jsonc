@@ -10,7 +10,9 @@
 	"vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
 
 	// Biome 처리 대상 — **: 전체, !!**/dist: dist 제외
-	"files": { "includes": ["**", "!!**/dist", "!!**/node_modules"] },
+	"files": {
+		"includes": ["**", "!!**/dist", "!!**/node_modules", "!!**/coverage"]
+	},
 
 	// 코드 포맷터 — 들여쓰기·줄바꿈 등 스타일 정리
 	"formatter": { "enabled": true, "indentStyle": "tab" },
@@ -33,7 +35,8 @@
 
 			// 정확성 관련 규칙
 			"correctness": {
-				"noUnusedVariables": "error" // 사용하지 않는 변수 금지
+				"noUnusedVariables": "info", // 사용하지 않는 변수 금지 - _변수명으로 바뀌어서 info 로 변경
+				"noUnusedImports": "error" // 사용하지 않는 모듈 금지
 			},
 
 			// 실험적(nursery) 규칙 — 아직 안정화 전, 향후 변경 가능

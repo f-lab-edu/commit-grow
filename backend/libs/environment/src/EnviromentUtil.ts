@@ -19,9 +19,11 @@ export class EnviromentUtil {
 	}
 
 	private static getEnvFrom(nodeEnv: string) {
-		const envyaml = load(readFileSync(`env/env.${nodeEnv}.yml`, 'utf8'));
+		const environmentObject =
+			load(readFileSync(`env/env.${nodeEnv}.yml`, 'utf8')) || {};
+		environmentObject['environment'] = nodeEnv;
 
-		return plainToInstance(Environment, envyaml, {
+		return plainToInstance(Environment, environmentObject, {
 			enableImplicitConversion: false,
 		});
 	}
