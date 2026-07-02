@@ -5,7 +5,7 @@ import { load } from 'js-yaml';
 import { Environment } from './schema/Environment';
 
 export class EnviromentUtil {
-	private static env: Environment | undefined;
+	private static env: Environment;
 
 	static getEnv(nodeEnv: string = process.env.NODE_ENV || 'test'): Environment {
 		if (EnviromentUtil.env) {
@@ -19,10 +19,11 @@ export class EnviromentUtil {
 	}
 
 	private static getEnvFrom(nodeEnv: string) {
-		const envyaml = load(readFileSync(`env/env.${nodeEnv}.yml`, 'utf8')) || {};
-		envyaml['environment'] = nodeEnv;
+		const environmentObject =
+			load(readFileSync(`env/env.${nodeEnv}.yml`, 'utf8')) || {};
+		environmentObject['environment'] = nodeEnv;
 
-		return plainToInstance(Environment, envyaml, {
+		return plainToInstance(Environment, environmentObject, {
 			enableImplicitConversion: false,
 		});
 	}

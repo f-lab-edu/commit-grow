@@ -14,5 +14,6 @@ export default defineConfig({
 			reportsDirectory: './coverage',
 			include: ['apps/**/*.{ts,js}', 'libs/**/*.{ts,js}'],
 		},
+		maxWorkers: '50%',
 	},
 });
