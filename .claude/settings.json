@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm test:e2e)",
+      "Bash(pnpm test:cov)",
+      "Bash(pnpm lint *)"
+    ]
+  }
+}

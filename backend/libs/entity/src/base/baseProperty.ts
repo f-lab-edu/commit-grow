@@ -1,5 +1,5 @@
-import { p } from "@mikro-orm/core";
+import { p } from '@mikro-orm/core';
 
 export const baseProperty = {
-	id: p.uuid().primary().defaultRaw("uuidv7()"),
+	id: p.uuid().primary().defaultRaw('uuidv7()'),
 };

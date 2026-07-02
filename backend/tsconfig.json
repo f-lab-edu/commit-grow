@@ -25,7 +25,9 @@
 			"@app/entity": ["libs/entity/src"],
 			"@app/entity/*": ["libs/entity/src/*"],
 			"@app/environment": ["libs/environment/src"],
-			"@app/environment/*": ["libs/environment/src/*"]
+			"@app/environment/*": ["libs/environment/src/*"],
+			"@app/logger": ["libs/logger/src"],
+			"@app/logger/*": ["libs/logger/src/*"]
 		}
 	}
 }
