@@ -5,7 +5,7 @@ import { load } from 'js-yaml';
 import { Environment } from './schema/Environment';
 
 export class EnviromentUtil {
-	private static env: Environment;
+	private static env: Environment | undefined;
 
 	static getEnv(nodeEnv: string = process.env.NODE_ENV || 'test'): Environment {
 		if (EnviromentUtil.env) {

@@ -1,6 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import { VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ApiModule } from '../src/api.module';
@@ -9,12 +10,11 @@ describe('Api (e2e)', () => {
 	let app: INestApplication;
 
 	beforeAll(async () => {
-		app = await NestFactory.create(ApiModule, { logger: false });
-		app.setGlobalPrefix('api');
-		app.enableVersioning({
-			type: VersioningType.URI,
-			defaultVersion: '1',
-		});
+		const moduleRef = await Test.createTestingModule({
+			imports: [ApiModule],
+		}).compile();
+
+		app = moduleRef.createNestApplication();
 		await app.init();
 	});
 
