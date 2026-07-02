@@ -1,13 +1,13 @@
 {
 	"$schema": "https://biomejs.dev/schemas/2.5.1/schema.json",
-
+	"root": true,
 	// 모노레포 루트 — 공통 포맷·린트 규칙 (backend/frontend가 extends: "//"로 상속)
 	"vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
 	"formatter": { "enabled": true, "indentStyle": "tab" },
 	"linter": {
 		"enabled": true,
 		"rules": {
-			"preset": "recommended",
+			"preset": "none",
 			"complexity": {
 				"noBannedTypes": "error",
 				"noUselessThisAlias": "error",

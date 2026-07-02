@@ -2,6 +2,10 @@
 	// 에디터 자동완성·유효성 검사용 스키마 (Biome 실행과 무관)
 	"$schema": "https://biomejs.dev/schemas/2.5.1/schema.json",
 
+	"root": false,
+
+	"extends": "//",
+
 	// Git 연동 — 변경 파일 우선 처리, .gitignore 규칙 반영
 	"vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
 
