@@ -9,7 +9,7 @@ import { ApiController } from './api.controller';
 	imports: [
 		ConfigModule.forRoot({
 			isGlobal: true,
-			load: [() => EnviromentUtil.getEnv(process.env.NODE_ENV)],
+			load: [() => EnviromentUtil.getEnv()],
 		}),
 		MikroOrmModule.forRoot(mikroOrmConfig),
 	],

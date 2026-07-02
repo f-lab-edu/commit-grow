@@ -1,7 +1,7 @@
 import { EnviromentUtil } from '@app/environment/EnviromentUtil';
 import { defineConfig } from '@mikro-orm/postgresql';
 
-const dbEnv = EnviromentUtil.getEnv(process.env.NODE_ENV).database;
+const dbEnv = EnviromentUtil.getEnv().database;
 
 export default defineConfig({
 	host: dbEnv.host,

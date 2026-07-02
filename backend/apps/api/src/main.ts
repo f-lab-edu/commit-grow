@@ -11,8 +11,8 @@ import { ApiModule } from './api.module';
 
 const DEFAULT_PORT = 3000;
 
-async function bootstrap(env: string) {
-	const environment = EnviromentUtil.getEnv(env);
+async function bootstrap() {
+	const environment = EnviromentUtil.getEnv();
 
 	const app = await NestFactory.create(ApiModule);
 
@@ -37,4 +37,4 @@ async function bootstrap(env: string) {
 	await app.listen(environment.server.port || DEFAULT_PORT);
 }
 
-bootstrap(process.env.NODE_ENV ?? 'local');
+bootstrap();

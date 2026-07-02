@@ -7,7 +7,7 @@ import { Environment } from './schema/Environment';
 export class EnviromentUtil {
 	private static env: Environment;
 
-	static getEnv(nodeEnv?: string): Environment {
+	static getEnv(nodeEnv: string = process.env.NODE_ENV || 'test'): Environment {
 		if (EnviromentUtil.env) {
 			return EnviromentUtil.env;
 		}
@@ -18,7 +18,7 @@ export class EnviromentUtil {
 		return EnviromentUtil.env;
 	}
 
-	private static getEnvFrom(nodeEnv: string = 'test') {
+	private static getEnvFrom(nodeEnv: string) {
 		const envyaml = load(readFileSync(`env/env.${nodeEnv}.yml`, 'utf8'));
 
 		return plainToInstance(Environment, envyaml, {
