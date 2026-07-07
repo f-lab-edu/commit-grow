@@ -1,29 +1,29 @@
 {
 	// 에디터 자동완성·유효성 검사용 스키마 (Biome 실행과 무관)
 	"$schema": "https://biomejs.dev/schemas/2.5.1/schema.json",
-
 	"root": false,
-
 	"extends": "//",
-
 	// Git 연동 — 변경 파일 우선 처리, .gitignore 규칙 반영
-	"vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
-
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
 	// Biome 처리 대상 — **: 전체, !!**/dist: dist 제외
 	"files": {
 		"includes": ["**", "!!**/dist", "!!**/node_modules", "!!**/coverage"]
 	},
-
 	// 코드 포맷터 — 들여쓰기·줄바꿈 등 스타일 정리
-	"formatter": { "enabled": true, "indentStyle": "tab" },
-
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab"
+	},
 	// 린터 — 코드 품질·잠재 버그 검사
 	"linter": {
 		"enabled": true,
 		"rules": {
 			// recommended 프리셋 대신 아래 규칙만 명시적으로 적용 (ESLint 마이그레이션 결과)
 			"preset": "none",
-
 			// 복잡도 관련 규칙
 			"complexity": {
 				"noBannedTypes": "error", // {} / Object / Function 등 금지된 타입 사용 금지
@@ -32,25 +32,24 @@
 				"useArrowFunction": "off", // function → 화살표 함수 강제 변환 끔
 				"noStaticOnlyClass": "off"
 			},
-
 			// 정확성 관련 규칙
 			"correctness": {
 				"noUnusedVariables": "info", // 사용하지 않는 변수 금지 - _변수명으로 바뀌어서 info 로 변경
 				"noUnusedImports": "error" // 사용하지 않는 모듈 금지
 			},
-
 			// 실험적(nursery) 규칙 — 아직 안정화 전, 향후 변경 가능
 			"nursery": {
 				"noExcessiveNestedCallbacks": {
 					"level": "error",
-					"options": { "max": 5 } // 콜백 중첩 최대 5단계 (ESLint max-nested-callbacks)
+					"options": {
+						"max": 5
+					} // 콜백 중첩 최대 5단계 (ESLint max-nested-callbacks)
 				},
 				"noFloatingPromises": "error", // await 없이 방치된 Promise 금지
 				"noMisusedPromises": "error", // Promise를 잘못된 위치에서 사용 금지
 				"useExplicitReturnType": "off", // 함수 반환 타입 명시 강제
 				"useExplicitType": "off" // 변수 타입 명시 강제
 			},
-
 			// 스타일 관련 규칙
 			"style": {
 				"noCommonJs": "error", // require/module.exports 금지 (ESM 사용)
@@ -62,7 +61,6 @@
 				"useBlockStatements": "warn", // 단일문 if/for 등에 중괄호 권장 (ESLint curly)
 				"useConsistentArrowReturn": "error" // 화살표 함수 본문 간결화 (ESLint arrow-body-style)
 			},
-
 			// 의심스러운 패턴 관련 규칙
 			"suspicious": {
 				"noConsole": "error", // console.* 사용 금지
@@ -82,13 +80,15 @@
 		// 린트 대상 파일 — *.ts는 루트만 매칭하므로 **/*.ts 사용
 		"includes": ["**/*.ts"]
 	},
-
 	// JavaScript/TypeScript 전용 포맷 옵션
 	"javascript": {
-		"formatter": { "quoteStyle": "single" },
-		"parser": { "unsafeParameterDecoratorsEnabled": true }
+		"formatter": {
+			"quoteStyle": "single"
+		},
+		"parser": {
+			"unsafeParameterDecoratorsEnabled": true
+		}
 	},
-
 	// 파일 패턴별 설정 덮어쓰기 (ESLint 마이그레이션 결과)
 	"overrides": [
 		{
@@ -102,7 +102,9 @@
 				"**/*Spec.*",
 				"**/__tests__/*"
 			],
-			"linter": { "rules": {} }
+			"linter": {
+				"rules": {}
+			}
 		},
 		{
 			// TypeScript 파일 — @typescript-eslint/recommended 일부 규칙
@@ -155,14 +157,18 @@
 				"**/*Spec.*",
 				"**/__tests__/*"
 			],
-			"linter": { "rules": {} }
+			"linter": {
+				"rules": {}
+			}
 		},
 		{
 			// (중복) TypeScript 파일 override — 마이그레이션 시 생성됨
 			"includes": ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
 			"linter": {
 				"rules": {
-					"complexity": { "noArguments": "error" },
+					"complexity": {
+						"noArguments": "error"
+					},
 					"correctness": {
 						"noConstAssign": "off",
 						"noGlobalObjectCalls": "off",
@@ -173,7 +179,10 @@
 						"noUnreachable": "off",
 						"noUnreachableSuper": "off"
 					},
-					"style": { "useConst": "error", "useSpreadOverApply": "error" },
+					"style": {
+						"useConst": "error",
+						"useSpreadOverApply": "error"
+					},
 					"suspicious": {
 						"noClassAssign": "off",
 						"noDuplicateClassMembers": "off",
@@ -191,10 +200,13 @@
 			}
 		}
 	],
-
 	// 에디터 보조 액션 — 저장 시 import 정렬 등
 	"assist": {
 		"enabled": true,
-		"actions": { "source": { "organizeImports": "on" } }
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
 	}
 }
