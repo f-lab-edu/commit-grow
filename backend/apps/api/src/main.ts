@@ -51,8 +51,8 @@ async function bootstrap() {
 	});
 
 	const redisClient = new Redis({
-		host: 'localhost',
-		port: 6379,
+		host: EnviromentUtil.getEnv().redis.host,
+		port: EnviromentUtil.getEnv().redis.port,
 	});
 
 	app.use(

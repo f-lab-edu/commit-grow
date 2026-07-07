@@ -143,6 +143,14 @@ function createTestEnv() {
 		oauthGithub: {
 			clientId: 'clientId',
 			clientSecret: 'clientSecret',
+			callbackURL: 'callbackURL',
+		},
+		redis: {
+			host: 'localhost',
+			port: 6379,
+		},
+		session: {
+			secret: 'secret',
 		},
 	};
 }
