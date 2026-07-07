@@ -5,6 +5,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import mikroOrmConfig from '../../../mikro-orm.config';
 import { ApiController } from './api.controller';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
 	imports: [
@@ -14,6 +15,7 @@ import { ApiController } from './api.controller';
 		}),
 		generatePinoLoggerModule(EnviromentUtil.getEnv()),
 		MikroOrmModule.forRoot(mikroOrmConfig),
+		AuthModule,
 	],
 	controllers: [ApiController],
 	providers: [],
