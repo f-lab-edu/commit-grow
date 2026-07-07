@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { EnviromentUtil } from '@app/environment/EnviromentUtil';
 import { defineConfig } from '@mikro-orm/postgresql';
 
@@ -24,11 +25,9 @@ export default defineConfig({
 	slowQueryThreshold: 1_000, // ms 넘는 쿼리를 slow-query로 로깅 (warning, 실패 시 error 레벨)
 
 	driverOptions: {
-		connection: {
-			statement_timeout: 5_000, // 서버(DB) 사이드: 5초 넘는 쿼리는 Postgres가 직접 강제 종료
-			query_timeout: 7_000, // 클라이언트(Node) 사이드: DB가 응답 안 해도 7초면 클라이언트가 포기하고 에러 던짐
-			lock_timeout: 3_000, // 락 대기가 3초 넘으면 포기 (데드락/장시간 락 대기 방지)
-		},
+		statement_timeout: 5_000, // 서버(DB) 사이드: 5초 넘는 쿼리는 Postgres가 직접 강제 종료
+		query_timeout: 7_000, // 클라이언트(Node) 사이드: DB가 응답 안 해도 7초면 클라이언트가 포기하고 에러 던짐
+		lock_timeout: 3_000, // 락 대기가 3초 넘으면 포기 (데드락/장시간 락 대기 방지)
 	},
 
 	// TODO: Entitiy 추가 후 제거 (Entitiy0개 시 에러)
