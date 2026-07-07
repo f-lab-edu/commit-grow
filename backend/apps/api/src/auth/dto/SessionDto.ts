@@ -1,9 +1,6 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 
 export class SessionDto {
-	static fromJson(payload: { userId: string; accessToken: string }): unknown {
-		return new SessionDto(payload.userId, payload.accessToken);
-	}
 	@IsString()
 	@IsNotEmpty()
 	readonly userId: string;
@@ -15,6 +12,11 @@ export class SessionDto {
 	constructor(userId: string, accessToken: string) {
 		this.userId = userId;
 		this.accessToken = accessToken;
+	}
+
+
+	static fromJson(payload: { userId: string; accessToken: string }): SessionDto {
+		return new SessionDto(payload.userId, payload.accessToken);	
 	}
 
 	toJson(): Record<string, unknown> {
