@@ -1,10 +1,11 @@
 import 'reflect-metadata';
 import { EnviromentUtil } from '@app/environment/EnviromentUtil';
+import type { MikroOrmModuleOptions } from '@mikro-orm/nestjs';
 import { defineConfig } from '@mikro-orm/postgresql';
 
 const dbEnv = EnviromentUtil.getEnv().database;
 
-export default defineConfig({
+const mikroOrmConfig = defineConfig({
 	host: dbEnv.host,
 	port: dbEnv.port,
 	user: dbEnv.user,
@@ -29,9 +30,8 @@ export default defineConfig({
 		query_timeout: 7_000, // 클라이언트(Node) 사이드: DB가 응답 안 해도 7초면 클라이언트가 포기하고 에러 던짐
 		lock_timeout: 3_000, // 락 대기가 3초 넘으면 포기 (데드락/장시간 락 대기 방지)
 	},
-
-	// TODO: Entitiy 추가 후 제거 (Entitiy0개 시 에러)
-	discovery: {
-		warnWhenNoEntities: false,
-	},
 });
+
+export { mikroOrmConfig };
+export default mikroOrmConfig;
+

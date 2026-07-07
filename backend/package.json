@@ -21,9 +21,7 @@
 		"test:debug": "vitest --inspect-brk --no-file-parallelism",
 		"test:e2e": "vitest run --config ./vitest.config.e2e.ts",
 		"orm": "mikro-orm",
-		"orm:migrate": "pnpm orm:create && pnpm orm:update",
-		"orm:create": "NODE_ENV=local mikro-orm schema:create -d",
-		"orm:update": "NODE_ENV=local mikro-orm schema:update -d",
+		"orm:update": "NODE_ENV=local mikro-orm schema:update -r",
 		"migration:create": "pnpm mikro-orm migration:create",
 		"migration:up": "pnpm mikro-orm migration:up",
 		"migration:list": "pnpm mikro-orm migration:list"
@@ -44,6 +42,7 @@
 		"class-validator": "^0.15.1",
 		"connect-redis": "^9.0.0",
 		"express-session": "^1.19.0",
+		"ioredis": "^5.11.1",
 		"js-yaml": "^5.2.0",
 		"nestjs-pino": "^4.6.1",
 		"passport": "^0.7.0",

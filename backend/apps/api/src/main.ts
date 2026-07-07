@@ -10,6 +10,10 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino/Logger';
 import { ApiModule } from './api.module';
+import { RedisStore } from 'connect-redis';
+import session from 'express-session';
+import passport from 'passport';
+import Redis from 'ioredis';
 
 const DEFAULT_PORT = 3000;
 
@@ -45,6 +49,28 @@ async function bootstrap() {
 		type: VersioningType.URI,
 		defaultVersion: '1',
 	});
+
+	const redisClient = new Redis({
+		host: 'localhost',
+		port: 6379,
+	});
+
+	app.use(
+		session({
+		  store: new RedisStore({ client: redisClient, prefix: 'session:' }),
+		  secret: environment.session.secret,
+		  resave: false,
+		  saveUninitialized: false,
+		  cookie: {
+			httpOnly: true,
+			secure: environment.isProduction,
+			sameSite: 'lax',
+			maxAge: 1000 * 60 * 60 * 24 * 7, // 1주일
+		  },
+		}),
+	);
+	app.use(passport.initialize());
+	app.use(passport.session());
 
 	await app.listen(environment.server.port || DEFAULT_PORT);
 

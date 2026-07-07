@@ -4,30 +4,26 @@ import { ConfigService } from "@nestjs/config";
 import { Environment } from "@app/environment/schema/Environment";
 import { OAuthGithubEnvironment } from "@app/environment/schema/OAuthGithubEnvironment";
 import { Injectable } from "@nestjs/common";
+import { AuthService } from "../auth.service";
+import { SessionDto } from "../dto/SessionDto";
 
 @Injectable()
 export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
     
-    constructor(config: ConfigService<Environment>) {
+    constructor(config: ConfigService<Environment>, private readonly authService: AuthService) {
         const githubConfig = config.getOrThrow<OAuthGithubEnvironment>('oauthGithub');
 
         super({
             clientID: githubConfig.clientId,
             clientSecret: githubConfig.clientSecret,
             callbackURL: githubConfig.callbackURL,
+            scope: ['user:email', 'read:user'],
         });
     }
     
-    validate(accessToken: string, refreshToken: string, profile: Profile, done: (err: any, user: any) => void): void {
-        const { id, username, emails } = profile;
+    async validate(accessToken: string, refreshToken: string, profile: Profile, done: (err: any, user: any) => void): Promise<void> {
+        const user = await this.authService.oauthLogin(profile.id, profile.username || '', profile.emails?.[0]?.value || '');
 
-        const user = {
-            id,
-            username,
-            emails,
-            accessToken,
-        };
-
-        done(null, user);
+        done(null, new SessionDto(user.id, accessToken));
     }
 }
