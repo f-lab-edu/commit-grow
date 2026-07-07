@@ -22,6 +22,8 @@
 		"test:e2e": "vitest run --config ./vitest.config.e2e.ts",
 		"orm": "mikro-orm",
 		"orm:update": "NODE_ENV=local mikro-orm schema:update -r",
+		"orm:drop": "NODE_ENV=local mikro-orm schema:drop -r",
+		"orm:fresh": "NODE_ENV=local mikro-orm schema:fresh -r",
 		"migration:create": "pnpm mikro-orm migration:create",
 		"migration:up": "pnpm mikro-orm migration:up",
 		"migration:list": "pnpm mikro-orm migration:list"
