@@ -8,7 +8,7 @@ import { Injectable } from "@nestjs/common";
 @Injectable()
 export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
     
-    constructor(private readonly config: ConfigService<Environment>) {
+    constructor(config: ConfigService<Environment>) {
         const githubConfig = config.getOrThrow<OAuthGithubEnvironment>('oauthGithub');
 
         super({
@@ -17,6 +17,7 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
             callbackURL: githubConfig.callbackURL,
         });
     }
+    
     validate(accessToken: string, refreshToken: string, profile: Profile, done: (err: any, user: any) => void): void {
         const { id, username, emails } = profile;
 
