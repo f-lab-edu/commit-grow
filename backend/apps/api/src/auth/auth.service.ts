@@ -12,7 +12,7 @@ export class AuthService {
         private readonly userRepository: EntityRepository<User>) {}
 
     async oauthLogin(githubId: string, username: string, email: string): Promise<User> {
-        const user = await this.userRepository.findOne( { githubId, $not: { deletedAt: null } });
+        const user = await this.userRepository.findOne( { githubId, deletedAt: null });
 
         // exception handling
         if (!user) {

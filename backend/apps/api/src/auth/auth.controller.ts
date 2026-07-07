@@ -1,11 +1,11 @@
 import { Controller, Get, Req, Res, UseGuards } from "@nestjs/common";
 import { GithubAuthGuard } from "./guards/github-auth.guard";
 import type { Request, Response } from "express";
-import { ConfigService } from "@nestjs/config/dist/config.service";
 import { Environment } from "@app/environment/schema/Environment";
 import { OAuthGithubEnvironment } from "@app/environment/schema/OAuthGithubEnvironment";
 import { AuthService } from "./auth.service";
 import { SessionDto } from "./dto/SessionDto";
+import { ConfigService } from "@nestjs/config";
 
 @Controller('auth')
 export class AuthController {

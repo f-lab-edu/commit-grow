@@ -17,6 +17,11 @@ import Redis from 'ioredis';
 
 const DEFAULT_PORT = 3000;
 
+const redisClient = new Redis({
+	host: EnviromentUtil.getEnv().redis.host,
+	port: EnviromentUtil.getEnv().redis.port,
+});
+
 async function bootstrap() {
 	const environment = EnviromentUtil.getEnv();
 
@@ -48,11 +53,6 @@ async function bootstrap() {
 	app.enableVersioning({
 		type: VersioningType.URI,
 		defaultVersion: '1',
-	});
-
-	const redisClient = new Redis({
-		host: EnviromentUtil.getEnv().redis.host,
-		port: EnviromentUtil.getEnv().redis.port,
 	});
 
 	app.use(
