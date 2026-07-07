@@ -3,9 +3,9 @@ import { generatePinoLoggerModule } from '@app/logger/generatePinoLoggerModule';
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { mikroOrmConfig } from 'mikro-orm.config';
 import { ApiController } from './api.controller';
 import { AuthModule } from './auth/auth.module';
-import { mikroOrmConfig } from 'mikro-orm.config';
 
 @Module({
 	imports: [

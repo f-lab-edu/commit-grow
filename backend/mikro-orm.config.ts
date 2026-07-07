@@ -1,6 +1,5 @@
 import 'reflect-metadata';
 import { EnviromentUtil } from '@app/environment/EnviromentUtil';
-import type { MikroOrmModuleOptions } from '@mikro-orm/nestjs';
 import { defineConfig } from '@mikro-orm/postgresql';
 
 const dbEnv = EnviromentUtil.getEnv().database;
@@ -34,4 +33,3 @@ const mikroOrmConfig = defineConfig({
 
 export { mikroOrmConfig };
 export default mikroOrmConfig;
-

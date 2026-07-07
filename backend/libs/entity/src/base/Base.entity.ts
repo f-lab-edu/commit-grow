@@ -1,9 +1,7 @@
-import { Entity, PrimaryKey, Property } from "@mikro-orm/decorators/legacy";
-
+import { Entity, PrimaryKey } from '@mikro-orm/decorators/legacy';
 
 @Entity({ abstract: true })
 export class BaseEntity {
 	@PrimaryKey({ type: 'uuid', defaultRaw: 'uuidv7()' })
 	id: string;
-
-};
+}

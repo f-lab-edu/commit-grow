@@ -1,10 +1,10 @@
 import { Type } from 'class-transformer';
 import { IsNotEmpty, IsString, ValidateNested } from 'class-validator';
 import { DataBaseEnvironment } from './DataBaseEnvironment';
-import { ServerEnvironment } from './ServerEnvironment';
 import { OAuthGithubEnvironment } from './OAuthGithubEnvironment';
-import { SessionEnvironment } from './SessionEnvironment';
 import { RedisEnvironment } from './RedisEnvironment';
+import { ServerEnvironment } from './ServerEnvironment';
+import { SessionEnvironment } from './SessionEnvironment';
 
 export class Environment {
 	@IsString()
@@ -30,7 +30,7 @@ export class Environment {
 	@IsNotEmpty()
 	@Type(() => SessionEnvironment)
 	public readonly session: SessionEnvironment;
-	
+
 	@ValidateNested()
 	@IsNotEmpty()
 	@Type(() => RedisEnvironment)
