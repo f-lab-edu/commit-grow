@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import { IsNotEmpty, IsString, ValidateNested } from 'class-validator';
 import { DataBaseEnvironment } from './DataBaseEnvironment';
 import { ServerEnvironment } from './ServerEnvironment';
+import { OAuthGithubEnvironment } from './OAuthGithubEnvironment';
 
 export class Environment {
 	@IsString()
@@ -17,6 +18,11 @@ export class Environment {
 	@IsNotEmpty()
 	@Type(() => DataBaseEnvironment)
 	public readonly database: DataBaseEnvironment;
+
+	@ValidateNested()
+	@IsNotEmpty()
+	@Type(() => OAuthGithubEnvironment)
+	public readonly oauthGithub: OAuthGithubEnvironment;
 
 	get isLocalDevelopment(): boolean {
 		return this.environment === 'local';

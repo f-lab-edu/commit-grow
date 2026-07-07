@@ -140,5 +140,9 @@ function createTestEnv() {
 			password: 'postgres',
 			database: 'test',
 		},
+		oauthGithub: {
+			clientId: 'clientId',
+			clientSecret: 'clientSecret',
+		},
 	};
 }
