@@ -13,6 +13,9 @@ export class BaseTimeEntity extends BaseEntity {
 	})
 	updatedAt: Date;
 
+	@Property({ type: 'boolean', default: false })
+	isDeleted: boolean;
+
 	@Property({ type: 'datetime', nullable: true })
 	deletedAt?: Date;
 }
