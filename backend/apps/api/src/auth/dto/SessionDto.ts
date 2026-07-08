@@ -14,9 +14,11 @@ export class SessionDto {
 		this.accessToken = accessToken;
 	}
 
-
-	static fromJson(payload: { userId: string; accessToken: string }): SessionDto {
-		return new SessionDto(payload.userId, payload.accessToken);	
+	static fromJson(payload: {
+		userId: string;
+		accessToken: string;
+	}): SessionDto {
+		return new SessionDto(payload.userId, payload.accessToken);
 	}
 
 	toJson(): Record<string, unknown> {

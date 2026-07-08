@@ -2,7 +2,11 @@ import { Entity, Index, Property } from '@mikro-orm/decorators/legacy';
 import { BaseTimeEntity } from '../base/BaseTime.entity';
 
 @Entity({ tableName: 'users' })
-@Index({ properties: ['githubId'], name: 'idx_github_id', options: { unique: true } })
+@Index({
+	properties: ['githubId'],
+	name: 'idx_github_id',
+	options: { unique: true },
+})
 export class User extends BaseTimeEntity {
 	@Property({ type: 'varchar', length: 100 })
 	userName: string;

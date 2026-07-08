@@ -39,7 +39,7 @@ async function bootstrap() {
 		}),
 	);
 
-	if (environment.isNotProduction) {
+	if (!environment.isEnvironment('production')) {
 		const config = new DocumentBuilder()
 			.setTitle('Commit Grow API')
 			.setDescription('GitHub 활동 수집 및 AI 회고 플랫폼 API 문서')
@@ -63,7 +63,7 @@ async function bootstrap() {
 			saveUninitialized: false,
 			cookie: {
 				httpOnly: true,
-				secure: environment.isProduction,
+				secure: environment.isEnvironment('production'),
 				sameSite: 'lax',
 				maxAge: 1000 * 60 * 60 * 24 * 7, // 1주일
 			},
@@ -76,7 +76,7 @@ async function bootstrap() {
 
 	const logger = app.get(Logger);
 	logger.log(
-		`API 서버 작동: ${environment.isLocalDevelopment ? `http://localhost:${environment.server.port}` : ''}`,
+		`API 서버 작동: ${environment.isEnvironment('local') ? `http://localhost:${environment.server.port}` : ''}`,
 	);
 }
 

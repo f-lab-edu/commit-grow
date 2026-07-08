@@ -73,58 +73,6 @@ describe('Environment Unit Test', () => {
 			).toMatchInlineSnapshot(`"host should not be empty"`);
 		});
 	});
-
-	describe('isLocalDevelopment', () => {
-		it('environment가 local이면 true를 반환한다.', () => {
-			// given
-			const env = createTestEnv();
-			env.environment = 'local';
-
-			// when
-			const environment = plainToClass(Environment, env);
-
-			// then
-			expect(environment.isLocalDevelopment).toBe(true);
-		});
-
-		it('environment가 local이 아니면 false를 반환한다.', () => {
-			// given
-			const env = createTestEnv();
-			env.environment = 'production';
-
-			// when
-			const environment = plainToClass(Environment, env);
-
-			// then
-			expect(environment.isLocalDevelopment).toBe(false);
-		});
-	});
-
-	describe('isNotProduction', () => {
-		it('environment가 production이면 false를 반환한다.', () => {
-			// given
-			const env = createTestEnv();
-			env.environment = 'production';
-
-			// when
-			const environment = plainToClass(Environment, env);
-
-			// then
-			expect(environment.isNotProduction).toBe(false);
-		});
-
-		it('environment가 production이 아니면 true를 반환한다.', () => {
-			// given
-			const env = createTestEnv();
-			env.environment = 'local';
-
-			// when
-			const environment = plainToClass(Environment, env);
-
-			// then
-			expect(environment.isNotProduction).toBe(true);
-		});
-	});
 });
 
 function createTestEnv() {
