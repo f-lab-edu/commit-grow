@@ -22,7 +22,7 @@
 
 ### 기본 원칙
 
-파일명은 **`[도메인].[역할].ts`** 형식의 **kebab-case** 로 작성합니다.
+파일명은 **`[도메인].[역할].ts`** 아래 형식으로 작성합니다.
 
 ```
 retrospect.controller.ts
@@ -50,7 +50,8 @@ logging.interceptor.ts
 | 가드 | `.guard.ts` | `auth.guard.ts` |
 | 인터셉터 | `.interceptor.ts` | `logging.interceptor.ts` |
 | 단위 테스트 | `.spec.ts` | `retrospect.service.spec.ts` |
-| E2E 테스트 | `.e2e-spec.ts` | `retrospect.e2e-spec.ts` |
+| 통합 테스트 | `int.spec.ts` | `retrospect.service.int.spec.ts` |
+| E2E 테스트 | `.e2e.spec.ts` | `retrospect.e2e-spec.ts` |
 
 ### 테스트 파일
 
