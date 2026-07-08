@@ -1,9 +1,20 @@
-import { Controller, Get, Res, UseGuards } from '@nestjs/common';
-import type { Response } from 'express';
+import {
+	Controller,
+	Get,
+	InternalServerErrorException,
+	Req,
+	Res,
+	UseGuards,
+} from '@nestjs/common';
+import type { Request, Response } from 'express';
+import { Logger } from 'nestjs-pino/Logger';
+import { Auth } from '../decorators/Auth.decorator';
 import { GithubAuthGuard } from './guards/github-auth.guard';
 
 @Controller('auth')
 export class AuthController {
+	constructor(private readonly logger: Logger) {}
+
 	@Get('github')
 	@UseGuards(GithubAuthGuard)
 	// biome-ignore lint/suspicious/noEmptyBlockStatements: passport 로직
@@ -11,7 +22,39 @@ export class AuthController {
 
 	@Get('github/callback')
 	@UseGuards(GithubAuthGuard)
-	async githubCallback(@Res() res: Response) {
+	async githubCallback(@Req() req: Request, @Res() res: Response) {
+		return res.redirect('/'); // 임시
+	}
+
+	@Get('signout')
+	@Auth()
+	async signout(@Req() req: Request, @Res() res: Response) {
+		this.logger.log('로그아웃 처리 시작');
+		try {
+			await new Promise((resolve, reject) => {
+				req.logout((err) => {
+					if (err) {
+						reject(err);
+					}
+					resolve(true);
+				});
+			});
+
+			await new Promise((resolve, reject) => {
+				req.session.destroy((err) => {
+					if (err) {
+						reject(err);
+					}
+					resolve(true);
+				});
+			});
+		} catch (error) {
+			this.logger.error('로그아웃 처리 중 오류가 발생했습니다.', error);
+			throw new InternalServerErrorException(
+				'로그아웃 처리 중 오류가 발생했습니다.',
+			);
+		}
+
 		return res.redirect('/'); // 임시
 	}
 

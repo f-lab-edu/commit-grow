@@ -36,7 +36,9 @@ export class Environment {
 	@Type(() => RedisEnvironment)
 	public readonly redis: RedisEnvironment;
 
-	isEnvironment(environment: 'local' | 'development' | 'production'): boolean {
+	isEnvironment(
+		environment: 'local' | 'development' | 'production' | 'test',
+	): boolean {
 		return this.environment === environment;
 	}
 }

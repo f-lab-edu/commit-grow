@@ -1,18 +1,10 @@
 import 'reflect-metadata';
+import { setWebBootstrap } from '@app/common/web-bootstrap/setWebBootstrap';
 import { EnviromentUtil } from '@app/environment/EnviromentUtil';
-import {
-	BadRequestException,
-	type ValidationError,
-	ValidationPipe,
-	VersioningType,
-} from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { RedisStore } from 'connect-redis';
-import session from 'express-session';
 import Redis from 'ioredis';
 import { Logger } from 'nestjs-pino/Logger';
-import passport from 'passport';
 import { ApiModule } from './api.module';
 
 const DEFAULT_PORT = 3000;
@@ -27,18 +19,6 @@ async function bootstrap() {
 
 	const app = await NestFactory.create(ApiModule);
 
-	app.useGlobalPipes(
-		new ValidationPipe({
-			transform: true,
-			validationError: {
-				value: true,
-			},
-			// TODO: 공통 API 응답 DTO 만들고 교체하기
-			exceptionFactory: (_validationErrors: ValidationError[] = []) =>
-				new BadRequestException(),
-		}),
-	);
-
 	if (!environment.isEnvironment('production')) {
 		const config = new DocumentBuilder()
 			.setTitle('Commit Grow API')
@@ -49,28 +29,7 @@ async function bootstrap() {
 		SwaggerModule.setup('api-docs', app, document);
 	}
 
-	app.setGlobalPrefix('api');
-	app.enableVersioning({
-		type: VersioningType.URI,
-		defaultVersion: '1',
-	});
-
-	app.use(
-		session({
-			store: new RedisStore({ client: redisClient, prefix: 'session:' }),
-			secret: environment.session.secret,
-			resave: false,
-			saveUninitialized: false,
-			cookie: {
-				httpOnly: true,
-				secure: environment.isEnvironment('production'),
-				sameSite: 'lax',
-				maxAge: 1000 * 60 * 60 * 24 * 7, // 1주일
-			},
-		}),
-	);
-	app.use(passport.initialize());
-	app.use(passport.session());
+	setWebBootstrap(app, environment, redisClient);
 
 	await app.listen(environment.server.port || DEFAULT_PORT);
 
