@@ -11,7 +11,7 @@ export default defineConfig({
 		setupFiles: ['./vitest.setup.ts'],
 		testTimeout: 5_000,
 		env: {
-			NODE_ENV: 'local',
+			NODE_ENV: 'test',
 		},
 	},
 });
