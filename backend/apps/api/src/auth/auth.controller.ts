@@ -9,11 +9,17 @@ import {
 import type { Request, Response } from 'express';
 import { Logger } from 'nestjs-pino/Logger';
 import { Auth } from '../decorators/Auth.decorator';
+import { LoginSession } from '../decorators/LoginSession.decorator';
+import { AuthService } from './auth.service';
+import { SessionDto } from './dto/SessionDto';
 import { GithubAuthGuard } from './guards/github-auth.guard';
 
 @Controller('auth')
 export class AuthController {
-	constructor(private readonly logger: Logger) {}
+	constructor(
+		private readonly logger: Logger,
+		private readonly authService: AuthService,
+	) {}
 
 	@Get('github')
 	@UseGuards(GithubAuthGuard)
@@ -28,8 +34,11 @@ export class AuthController {
 
 	@Get('signout')
 	@Auth()
-	async signout(@Req() req: Request, @Res() res: Response) {
-		this.logger.log('로그아웃 처리 시작');
+	async signout(
+		@Req() req: Request,
+		@Res() res: Response,
+		@LoginSession() sessionDto: SessionDto,
+	) {
 		try {
 			await new Promise((resolve, reject) => {
 				req.logout((err) => {
@@ -48,6 +57,8 @@ export class AuthController {
 					resolve(true);
 				});
 			});
+
+			await this.authService.signout(sessionDto);
 		} catch (error) {
 			this.logger.error('로그아웃 처리 중 오류가 발생했습니다.', error);
 			throw new InternalServerErrorException(

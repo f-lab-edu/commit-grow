@@ -1,5 +1,7 @@
+import { SystemException } from '@app/common/exception/SystemException';
 import { setWebBootstrap } from '@app/common/web-bootstrap/setWebBootstrap';
 import { EnviromentUtil } from '@app/environment/EnviromentUtil';
+import { GithubClientService } from '@app/github-client/github-client.service';
 import type { ExecutionContext, INestApplication } from '@nestjs/common';
 import { AuthModule } from 'apps/api/src/auth/auth.module';
 import { SessionDto } from 'apps/api/src/auth/dto/SessionDto';
@@ -19,9 +21,14 @@ import {
 
 describe('AuthController E2E Test', () => {
 	let app: INestApplication;
+	const mockRevokeAccessToken = vi.fn();
 
 	beforeAll(async () => {
 		const builder = await createTestingModule([AuthModule])
+			.overrideProvider(GithubClientService)
+			.useValue({
+				revokeAccessToken: mockRevokeAccessToken,
+			})
 			.overrideGuard(GithubAuthGuard)
 			.useValue({
 				canActivate: (context: ExecutionContext) => {
@@ -68,6 +75,7 @@ describe('AuthController E2E Test', () => {
 		it('인증된 사용자가 로그아웃 성공시 리다이렉트 302 반환된다.', async () => {
 			//given
 			const agent = request.agent(app.getHttpServer());
+			mockRevokeAccessToken.mockResolvedValue(undefined);
 			await agent.get('/api/v1/auth/github/callback');
 
 			//when
@@ -86,6 +94,21 @@ describe('AuthController E2E Test', () => {
 
 			//then
 			expect(result.status).toBe(401);
+		});
+
+		it('로그아웃 처리 중 오류가 발생하면 500 에러가 반환된다.', async () => {
+			//given
+			const agent = request.agent(app.getHttpServer());
+			mockRevokeAccessToken.mockRejectedValue(
+				new SystemException('테스트용 에러'),
+			);
+			await agent.get('/api/v1/auth/github/callback');
+
+			//when
+			const result = await agent.get('/api/v1/auth/signout');
+
+			//then
+			expect(result.status).toBe(500);
 		});
 	});
 });
