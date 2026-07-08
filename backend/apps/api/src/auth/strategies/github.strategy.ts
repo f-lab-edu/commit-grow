@@ -3,6 +3,7 @@ import { OAuthGithubEnvironment } from '@app/environment/schema/OAuthGithubEnvir
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
+import { validateSync } from 'class-validator';
 import { Profile, Strategy } from 'passport-github2';
 import { AuthService } from '../auth.service';
 import { SessionDto } from '../dto/SessionDto';
@@ -15,6 +16,13 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
 	) {
 		const githubConfig =
 			config.getOrThrow<OAuthGithubEnvironment>('oauthGithub');
+
+		const validationErrors = validateSync(githubConfig);
+		if (validationErrors.length > 0) {
+			throw new Error(
+				`Invalid OAuth Github Configuration validateErrors=${JSON.stringify(validationErrors)}`,
+			);
+		}
 
 		super({
 			clientID: githubConfig.clientId,
