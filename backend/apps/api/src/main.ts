@@ -8,10 +8,19 @@ import {
 } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { RedisStore } from 'connect-redis';
+import session from 'express-session';
+import Redis from 'ioredis';
 import { Logger } from 'nestjs-pino/Logger';
+import passport from 'passport';
 import { ApiModule } from './api.module';
 
 const DEFAULT_PORT = 3000;
+
+const redisClient = new Redis({
+	host: EnviromentUtil.getEnv().redis.host,
+	port: EnviromentUtil.getEnv().redis.port,
+});
 
 async function bootstrap() {
 	const environment = EnviromentUtil.getEnv();
@@ -30,7 +39,7 @@ async function bootstrap() {
 		}),
 	);
 
-	if (environment.isNotProduction) {
+	if (!environment.isEnvironment('production')) {
 		const config = new DocumentBuilder()
 			.setTitle('Commit Grow API')
 			.setDescription('GitHub 활동 수집 및 AI 회고 플랫폼 API 문서')
@@ -46,11 +55,28 @@ async function bootstrap() {
 		defaultVersion: '1',
 	});
 
+	app.use(
+		session({
+			store: new RedisStore({ client: redisClient, prefix: 'session:' }),
+			secret: environment.session.secret,
+			resave: false,
+			saveUninitialized: false,
+			cookie: {
+				httpOnly: true,
+				secure: environment.isEnvironment('production'),
+				sameSite: 'lax',
+				maxAge: 1000 * 60 * 60 * 24 * 7, // 1주일
+			},
+		}),
+	);
+	app.use(passport.initialize());
+	app.use(passport.session());
+
 	await app.listen(environment.server.port || DEFAULT_PORT);
 
 	const logger = app.get(Logger);
 	logger.log(
-		`API 서버 작동: ${environment.isLocalDevelopment ? `http://localhost:${environment.server.port}` : ''}`,
+		`API 서버 작동: ${environment.isEnvironment('local') ? `http://localhost:${environment.server.port}` : ''}`,
 	);
 }
 

@@ -3,13 +3,13 @@ import { RequestMethod } from '@nestjs/common';
 import { LoggerModule } from 'nestjs-pino';
 
 export function generatePinoLoggerModule(environment: Environment) {
-	const isLocalDevelopment = environment.isLocalDevelopment;
+	const isLocal = environment.isEnvironment('local');
 
 	return LoggerModule.forRoot({
 		forRoutes: [{ path: '{*path}', method: RequestMethod.ALL }],
 		pinoHttp: {
-			level: environment.isLocalDevelopment ? 'debug' : 'info',
-			transport: isLocalDevelopment
+			level: isLocal ? 'debug' : 'info',
+			transport: isLocal
 				? {
 						target: 'pino-pretty',
 						options: {
