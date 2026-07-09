@@ -14,7 +14,7 @@ export class AuthService {
 		private readonly githubClientService: GithubClientService,
 	) {}
 
-	async signout(sessionDto: SessionDto) {
+	async signout(sessionDto: SessionDto): Promise<void> {
 		await this.githubClientService.revokeAccessToken(sessionDto.accessToken);
 	}
 
