@@ -15,10 +15,15 @@ async function bootstrap() {
 	const app = await NestFactory.create(ApiModule);
 	const logger = app.get(Logger);
 
+	const MAX_REDIS_CONNECT_RETRIES = 5;
 	const redisClient = createClient({
 		socket: {
 			host: environment.redis.host,
 			port: environment.redis.port,
+			reconnectStrategy: (retries) =>
+				retries > MAX_REDIS_CONNECT_RETRIES
+					? new Error('Redis 연결 재시도 횟수를 초과했습니다')
+					: Math.min(retries * 200, 2000),
 		},
 	});
 	redisClient.on('error', (err) => logger.error(err, 'Redis client error'));
