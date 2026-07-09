@@ -20,6 +20,8 @@
 		"test:cov": "vitest run --coverage",
 		"test:debug": "vitest --inspect-brk --no-file-parallelism",
 		"test:e2e": "vitest run --config ./vitest.config.e2e.ts",
+		"test:e2e:up": "docker compose -f docker-compose.test.yml up -d",
+		"test:e2e:down": "docker compose -f docker-compose.test.yml down",
 		"orm": "mikro-orm",
 		"orm:update": "NODE_ENV=local mikro-orm schema:update -r",
 		"orm:drop": "NODE_ENV=local mikro-orm schema:drop -r",

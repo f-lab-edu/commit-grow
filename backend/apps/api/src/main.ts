@@ -1,10 +1,10 @@
 import 'reflect-metadata';
+import { createRedisClient } from '@app/common/redis/createRedisClient';
 import { setWebBootstrap } from '@app/common/web-bootstrap/setWebBootstrap';
 import { EnviromentUtil } from '@app/environment/EnviromentUtil';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino/Logger';
-import { createClient } from 'redis';
 import { ApiModule } from './api.module';
 
 const DEFAULT_PORT = 3000;
@@ -15,17 +15,7 @@ async function bootstrap() {
 	const app = await NestFactory.create(ApiModule);
 	const logger = app.get(Logger);
 
-	const MAX_REDIS_CONNECT_RETRIES = 5;
-	const redisClient = createClient({
-		socket: {
-			host: environment.redis.host,
-			port: environment.redis.port,
-			reconnectStrategy: (retries) =>
-				retries > MAX_REDIS_CONNECT_RETRIES
-					? new Error('Redis 연결 재시도 횟수를 초과했습니다')
-					: Math.min(retries * 200, 2000),
-		},
-	});
+	const redisClient = createRedisClient(environment.redis);
 	redisClient.on('error', (err) => logger.error(err, 'Redis client error'));
 	await redisClient.connect();
 

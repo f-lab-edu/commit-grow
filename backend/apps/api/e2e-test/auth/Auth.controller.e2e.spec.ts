@@ -1,4 +1,5 @@
 import { SystemException } from '@app/common/exception/SystemException';
+import { createRedisClient } from '@app/common/redis/createRedisClient';
 import { setWebBootstrap } from '@app/common/web-bootstrap/setWebBootstrap';
 import { EnviromentUtil } from '@app/environment/EnviromentUtil';
 import { GithubClientModule, GithubClientService } from '@app/github-client';
@@ -7,6 +8,7 @@ import { AuthModule } from 'apps/api/src/auth/auth.module';
 import { SessionDto } from 'apps/api/src/auth/dto/SessionDto';
 import { GithubAuthGuard } from 'apps/api/src/auth/guards/github-auth.guard';
 import { createTestingModule } from 'libs/common/test-helper/createTestingModule';
+import type { RedisClientType } from 'redis';
 import request from 'supertest';
 import {
 	afterAll,
@@ -21,6 +23,8 @@ import {
 
 describe('AuthController E2E Test', () => {
 	let app: INestApplication;
+	let redisClient: RedisClientType;
+	let redisConnected = false;
 	const mockRevokeAccessToken = vi.fn();
 
 	beforeAll(async () => {
@@ -61,15 +65,23 @@ describe('AuthController E2E Test', () => {
 			})
 			.compile();
 
+		const environment = EnviromentUtil.getEnv();
+		redisClient = createRedisClient(environment.redis);
+		await redisClient.connect();
+		redisConnected = true;
+
 		app = builder.createNestApplication();
 
-		setWebBootstrap(app, EnviromentUtil.getEnv());
+		setWebBootstrap(app, environment, redisClient);
 
 		await app.init();
 	});
 
 	afterAll(async () => {
 		await app?.close();
+		if (redisConnected) {
+			await redisClient.quit();
+		}
 	});
 
 	beforeEach(() => {
