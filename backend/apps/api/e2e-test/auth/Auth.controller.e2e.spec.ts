@@ -1,7 +1,10 @@
 import { SystemException } from '@app/common/exception/SystemException';
 import { setWebBootstrap } from '@app/common/web-bootstrap/setWebBootstrap';
 import { EnviromentUtil } from '@app/environment/EnviromentUtil';
-import { GithubClientService } from '@app/github-client/github-client.service';
+import {
+	GithubClientModule,
+	GithubClientService,
+} from '@app/github-client';
 import type { ExecutionContext, INestApplication } from '@nestjs/common';
 import { AuthModule } from 'apps/api/src/auth/auth.module';
 import { SessionDto } from 'apps/api/src/auth/dto/SessionDto';
@@ -25,9 +28,18 @@ describe('AuthController E2E Test', () => {
 
 	beforeAll(async () => {
 		const builder = await createTestingModule([AuthModule])
-			.overrideProvider(GithubClientService)
-			.useValue({
-				revokeAccessToken: mockRevokeAccessToken,
+			.overrideModule(GithubClientModule)
+			.useModule({
+				module: class MockGithubClientModule {},
+				providers: [
+					{
+						provide: GithubClientService,
+						useValue: {
+							revokeAccessToken: mockRevokeAccessToken,
+						},
+					},
+				],
+				exports: [GithubClientService],
 			})
 			.overrideGuard(GithubAuthGuard)
 			.useValue({

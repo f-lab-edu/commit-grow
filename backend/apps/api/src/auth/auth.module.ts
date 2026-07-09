@@ -1,5 +1,5 @@
 import { User } from '@app/entity/domain/User.entity';
-import { GithubClientService } from '@app/github-client';
+import { GithubClientModule } from '@app/github-client';
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
@@ -8,13 +8,8 @@ import { SessionSerializer } from './session.serializer';
 import { GithubStrategy } from './strategies/github.strategy';
 
 @Module({
-	imports: [MikroOrmModule.forFeature([User])],
+	imports: [MikroOrmModule.forFeature([User]), GithubClientModule],
 	controllers: [AuthController],
-	providers: [
-		AuthService,
-		SessionSerializer,
-		GithubClientService,
-		GithubStrategy,
-	],
+	providers: [AuthService, SessionSerializer, GithubStrategy],
 })
 export class AuthModule {}
