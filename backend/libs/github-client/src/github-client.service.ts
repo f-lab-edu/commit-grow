@@ -42,7 +42,7 @@ export class GithubClientService {
 
 	async revokeAccessToken(accessToken: string): Promise<void> {
 		try {
-			await this.otokit.rest.apps.deleteAuthorization({
+			await this.otokit.rest.apps.deleteToken({
 				client_id: this.clientId,
 				access_token: accessToken,
 			});
