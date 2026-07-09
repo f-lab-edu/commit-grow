@@ -92,6 +92,36 @@ describe('AuthController E2E Test', () => {
 		vi.restoreAllMocks();
 	});
 
+	describe('GET /api/v1/auth/github/callback', () => {
+		it('로그인 성공시 / 로 302 리다이렉트되고 세션 쿠키가 발급된다.', async () => {
+			//given
+			const agent = request.agent(app.getHttpServer());
+
+			//when
+			const result = await agent.get('/api/v1/auth/github/callback');
+
+			//then
+			expect(result.status).toBe(302);
+			expect(result.headers.location).toBe('/');
+			expect(result.headers['set-cookie']).toEqual(
+				expect.arrayContaining([expect.stringContaining('connect.sid')]),
+			);
+		});
+
+		it('콜백 로그인 후 인증이 필요한 엔드포인트에 접근할 수 있다.', async () => {
+			//given
+			const agent = request.agent(app.getHttpServer());
+			mockRevokeAccessToken.mockResolvedValue(undefined);
+			await agent.get('/api/v1/auth/github/callback');
+
+			//when
+			const result = await agent.get('/api/v1/auth/signout');
+
+			//then
+			expect(result.status).toBe(302);
+		});
+	});
+
 	describe('GET /api/v1/signout', () => {
 		it('인증된 사용자가 로그아웃 성공시 리다이렉트 302 반환된다.', async () => {
 			//given
