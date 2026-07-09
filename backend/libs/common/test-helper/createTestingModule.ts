@@ -12,7 +12,7 @@ export function createTestingModule(imports: any[]) {
 				load: [() => EnviromentUtil.getEnv()],
 				isGlobal: true,
 			}),
-			generatePinoLoggerModule(EnviromentUtil.getEnv()),
+			generatePinoLoggerModule(),
 			MikroOrmModule.forRoot({
 				...testMikroOrmConfig,
 				autoLoadEntities: true,

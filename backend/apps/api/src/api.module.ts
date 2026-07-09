@@ -13,7 +13,7 @@ import { AuthModule } from './auth/auth.module';
 			isGlobal: true,
 			load: [() => EnviromentUtil.getEnv()],
 		}),
-		generatePinoLoggerModule(EnviromentUtil.getEnv()),
+		generatePinoLoggerModule(),
 		MikroOrmModule.forRoot({ ...mikroOrmConfig, autoLoadEntities: true }),
 		AuthModule,
 	],
