@@ -1,4 +1,6 @@
 import { EnviromentUtil } from '@app/environment/EnviromentUtil';
+import { Environment } from '@app/environment/schema/Environment';
+import { ConfigService } from '@nestjs/config';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { SessionAuthGuard } from './SessionAuth.guard';
 
@@ -7,7 +9,9 @@ describe('SessionAuthGuard Unit Test', () => {
 	const sessionCookieName: string = EnviromentUtil.getEnv().session.cookieName;
 
 	beforeEach(() => {
-		guard = new SessionAuthGuard();
+		guard = new SessionAuthGuard(
+			new ConfigService<Environment>(EnviromentUtil.getEnv()),
+		);
 	});
 
 	function createMockContext(reqOverrides: any) {

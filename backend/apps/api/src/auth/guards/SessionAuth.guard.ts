@@ -1,13 +1,21 @@
+import { Environment } from '@app/environment/schema/Environment';
 import {
 	CanActivate,
 	ExecutionContext,
 	Injectable,
 	UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 
 @Injectable()
 export class SessionAuthGuard implements CanActivate {
+	private readonly sessionCookieName: string;
+
+	constructor(configService: ConfigService<Environment>) {
+		this.sessionCookieName = configService.getOrThrow('session').cookieName;
+	}
+
 	canActivate(context: ExecutionContext): boolean {
 		const request: Request = context.switchToHttp().getRequest();
 
@@ -16,7 +24,7 @@ export class SessionAuthGuard implements CanActivate {
 		}
 
 		const cookieHeader: string = request.headers.cookie ?? '';
-		const hadSessionCookie = cookieHeader.includes('connect.sid=');
+		const hadSessionCookie = cookieHeader.includes(this.sessionCookieName);
 
 		if (hadSessionCookie) {
 			throw new UnauthorizedException(
