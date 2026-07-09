@@ -17,6 +17,7 @@ export class GithubClientService {
 	@IsString()
 	private readonly clientSecret: string;
 	private readonly otokit: Octokit;
+	private readonly basicAuthorizationHeader: string;
 
 	constructor(
 		configService: ConfigService<Environment>,
@@ -26,16 +27,11 @@ export class GithubClientService {
 			configService.getOrThrow<OAuthGithubEnvironment>('oauthGithub');
 		this.clientId = oauthGithubConfig.clientId;
 		this.clientSecret = oauthGithubConfig.clientSecret;
+		this.basicAuthorizationHeader = `Basic ${Buffer.from(
+			`${this.clientId}:${this.clientSecret}`,
+		).toString('base64')}`;
 
-		this.otokit = new Octokit({
-			request: {
-				headers: {
-					authorization: `Basic ${Buffer.from(
-						`${this.clientId}:${this.clientSecret}`,
-					).toString('base64')}`,
-				},
-			},
-		});
+		this.otokit = new Octokit();
 
 		this.validate();
 	}
@@ -45,6 +41,9 @@ export class GithubClientService {
 			await this.otokit.rest.apps.deleteToken({
 				client_id: this.clientId,
 				access_token: accessToken,
+				headers: {
+					authorization: this.basicAuthorizationHeader,
+				},
 			});
 		} catch (error) {
 			if ('status' in error && error.status === 404) {

@@ -29,16 +29,19 @@ describe('SessionAuthGuard Unit Test', () => {
 	});
 
 	it('세션 만료시 UnauthorizedException 발생', () => {
-		// given: 세션 쿠키 자체가 없는 요청 (로그인한 적 없음)
+		// given
 		const context = createMockContext({
 			isAuthenticated: () => false,
-			headers: {},
+			headers: {
+				cookie:
+					'connect.sid=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; httpOnly; SameSite=Lax',
+			},
 		});
 
 		// then
-		expect(() => guard.canActivate(context)).toThrowErrorMatchingInlineSnapshot(
-			`[UnauthorizedException: 세션이 만료 되었습니다. 다시 로그인 후 이용해주세요.]`,
-		);
+		expect(() =>
+			guard.canActivate(context),
+		).toThrowErrorMatchingInlineSnapshot(`[UnauthorizedException: 세션이 만료 되었습니다. 다시 로그인 후 이용해주세요.]`);
 	});
 
 	it('미인증 요청은 UnauthorizedException 발생', () => {
@@ -50,7 +53,7 @@ describe('SessionAuthGuard Unit Test', () => {
 
 		// then
 		expect(() => guard.canActivate(context)).toThrowErrorMatchingInlineSnapshot(
-			`[UnauthorizedException: 세션이 만료 되었습니다. 다시 로그인 후 이용해주세요.]`,
+			`[UnauthorizedException: 로그인이 필요한 서비스입니다. 로그인 후 이용해주세요.]`,
 		);
 	});
 });
