@@ -3,12 +3,12 @@ import { createRedisClient } from '@app/common/redis/createRedisClient';
 import { setWebBootstrap } from '@app/common/web-bootstrap/setWebBootstrap';
 import { EnviromentUtil } from '@app/environment/EnviromentUtil';
 import { GithubClientModule, GithubClientService } from '@app/github-client';
-import type { ExecutionContext, INestApplication } from '@nestjs/common';
+import { type ExecutionContext, type INestApplication } from '@nestjs/common';
 import { AuthModule } from 'apps/api/src/auth/auth.module';
 import { SessionDto } from 'apps/api/src/auth/dto/SessionDto';
 import { GithubAuthGuard } from 'apps/api/src/auth/guards/github-auth.guard';
 import { createTestingModule } from 'libs/common/test-helper/createTestingModule';
-import type { RedisClientType } from 'redis';
+import { Logger } from 'nestjs-pino';
 import request from 'supertest';
 import {
 	afterAll,
@@ -23,8 +23,6 @@ import {
 
 describe('AuthController E2E Test', () => {
 	let app: INestApplication;
-	let redisClient: RedisClientType;
-	let redisConnected = false;
 	const mockRevokeAccessToken = vi.fn();
 
 	beforeAll(async () => {
@@ -65,12 +63,13 @@ describe('AuthController E2E Test', () => {
 			})
 			.compile();
 
-		const environment = EnviromentUtil.getEnv();
-		redisClient = createRedisClient(environment.redis);
-		await redisClient.connect();
-		redisConnected = true;
-
 		app = builder.createNestApplication();
+
+		const environment = EnviromentUtil.getEnv();
+		const redisClient = await createRedisClient(
+			environment.redis,
+			app.get(Logger),
+		);
 
 		setWebBootstrap(app, environment, redisClient);
 
@@ -79,9 +78,6 @@ describe('AuthController E2E Test', () => {
 
 	afterAll(async () => {
 		await app?.close();
-		if (redisConnected) {
-			await redisClient.quit();
-		}
 	});
 
 	beforeEach(() => {

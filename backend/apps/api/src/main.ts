@@ -15,9 +15,7 @@ async function bootstrap() {
 	const app = await NestFactory.create(ApiModule);
 	const logger = app.get(Logger);
 
-	const redisClient = createRedisClient(environment.redis);
-	redisClient.on('error', (err) => logger.error(err, 'Redis client error'));
-	await redisClient.connect();
+	const redisClient = await createRedisClient(environment.redis, logger);
 
 	if (!environment.isEnvironment('production')) {
 		const config = new DocumentBuilder()
