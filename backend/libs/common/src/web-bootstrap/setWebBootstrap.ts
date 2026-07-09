@@ -8,13 +8,13 @@ import {
 } from '@nestjs/common';
 import { RedisStore } from 'connect-redis';
 import session from 'express-session';
-import Redis from 'ioredis';
 import passport from 'passport';
+import type { RedisClientType } from 'redis';
 
 export function setWebBootstrap(
 	app: INestApplication,
 	environment: Environment,
-	redisClient?: Redis,
+	redisClient?: RedisClientType,
 ) {
 	app.setGlobalPrefix('api');
 	app.enableVersioning({

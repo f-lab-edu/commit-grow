@@ -3,21 +3,26 @@ import { setWebBootstrap } from '@app/common/web-bootstrap/setWebBootstrap';
 import { EnviromentUtil } from '@app/environment/EnviromentUtil';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import Redis from 'ioredis';
 import { Logger } from 'nestjs-pino/Logger';
+import { createClient } from 'redis';
 import { ApiModule } from './api.module';
 
 const DEFAULT_PORT = 3000;
-
-const redisClient = new Redis({
-	host: EnviromentUtil.getEnv().redis.host,
-	port: EnviromentUtil.getEnv().redis.port,
-});
 
 async function bootstrap() {
 	const environment = EnviromentUtil.getEnv();
 
 	const app = await NestFactory.create(ApiModule);
+	const logger = app.get(Logger);
+
+	const redisClient = createClient({
+		socket: {
+			host: environment.redis.host,
+			port: environment.redis.port,
+		},
+	});
+	redisClient.on('error', (err) => logger.error(err, 'Redis client error'));
+	await redisClient.connect();
 
 	if (!environment.isEnvironment('production')) {
 		const config = new DocumentBuilder()
@@ -33,7 +38,6 @@ async function bootstrap() {
 
 	await app.listen(environment.server.port || DEFAULT_PORT);
 
-	const logger = app.get(Logger);
 	logger.log(
 		`API 서버 작동: ${environment.isEnvironment('local') ? `http://localhost:${environment.server.port}` : ''}`,
 	);
