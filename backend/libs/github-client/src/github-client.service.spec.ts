@@ -54,9 +54,7 @@ describe('GithubClientService', () => {
 			// then
 			expect(fetchMock).toHaveBeenCalledTimes(1);
 			const [url, requestInit] = fetchMock.mock.calls[0];
-			expect(url).toBe(
-				'https://api.github.com/applications/client-id/token',
-			);
+			expect(url).toBe('https://api.github.com/applications/client-id/token');
 			expect(requestInit.method).toBe('DELETE');
 			expect(requestInit.headers.authorization).toBe(
 				expectedAuthorizationHeader,
@@ -99,10 +97,9 @@ describe('GithubClientService', () => {
 			await expect(
 				service.revokeAccessToken('access-token'),
 			).rejects.toMatchObject({ status: 401 });
-			expect(logger.error).toHaveBeenCalledWith(
-				'토큰 무효화를 실패했습니다.',
-				{ error: expect.objectContaining({ status: 401 }) },
-			);
+			expect(logger.error).toHaveBeenCalledWith('토큰 무효화를 실패했습니다.', {
+				error: expect.objectContaining({ status: 401 }),
+			});
 		});
 	});
 });
