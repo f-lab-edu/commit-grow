@@ -24,6 +24,7 @@ export function setWebBootstrap(
 
 	app.use(
 		session({
+			name: environment.session.cookieName,
 			store: redisClient
 				? new RedisStore({ client: redisClient, prefix: 'session:' })
 				: undefined,

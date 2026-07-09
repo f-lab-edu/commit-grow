@@ -1,8 +1,10 @@
+import { EnviromentUtil } from '@app/environment/EnviromentUtil';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { SessionAuthGuard } from './SessionAuth.guard';
 
 describe('SessionAuthGuard Unit Test', () => {
 	let guard: SessionAuthGuard;
+	const sessionCookieName: string = EnviromentUtil.getEnv().session.cookieName;
 
 	beforeEach(() => {
 		guard = new SessionAuthGuard();
@@ -33,15 +35,14 @@ describe('SessionAuthGuard Unit Test', () => {
 		const context = createMockContext({
 			isAuthenticated: () => false,
 			headers: {
-				cookie:
-					'connect.sid=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; httpOnly; SameSite=Lax',
+				cookie: `${sessionCookieName}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; httpOnly; SameSite=Lax`,
 			},
 		});
 
 		// then
-		expect(() =>
-			guard.canActivate(context),
-		).toThrowErrorMatchingInlineSnapshot(`[UnauthorizedException: 세션이 만료 되었습니다. 다시 로그인 후 이용해주세요.]`);
+		expect(() => guard.canActivate(context)).toThrowErrorMatchingInlineSnapshot(
+			`[UnauthorizedException: 세션이 만료 되었습니다. 다시 로그인 후 이용해주세요.]`,
+		);
 	});
 
 	it('미인증 요청은 UnauthorizedException 발생', () => {
