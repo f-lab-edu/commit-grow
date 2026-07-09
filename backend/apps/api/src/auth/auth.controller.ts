@@ -40,8 +40,8 @@ export class AuthController {
 		@LoginSession() sessionDto: SessionDto,
 	) {
 		try {
-			await runCallback((callback) => req.logout(callback));
-			await runCallback((callback) => req.session.destroy(callback));
+			await this.deauthenticate(req);
+			await this.destroySession(req);
 			await this.authService.signout(sessionDto);
 		} catch (error) {
 			this.logger.error('로그아웃 처리 중 오류가 발생했습니다.', error);
@@ -74,6 +74,13 @@ export class AuthController {
         </body>
       </html>
     `);
+	}
+
+	private async deauthenticate(req: Request) {
+		await runCallback((callback) => req.logout(callback));
+	}
+	private async destroySession(req: Request) {
+		await runCallback((callback) => req.session.destroy(callback));
 	}
 }
 
