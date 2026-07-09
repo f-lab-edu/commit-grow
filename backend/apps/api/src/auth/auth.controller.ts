@@ -28,7 +28,19 @@ export class AuthController {
 
 	@Get('github/callback')
 	@UseGuards(GithubAuthGuard)
-	async githubCallback(@Req() req: Request, @Res() res: Response) {
+	async githubCallback(
+		@Req() req: Request,
+		@Res() res: Response,
+		@LoginSession() sessionDto: SessionDto,
+	) {
+		try {
+			await runCallback((callback) => req.login(sessionDto, callback));
+		} catch (error) {
+			this.logger.error('GitHub 로그인 처리 중 오류가 발생했습니다.', error);
+			throw new InternalServerErrorException(
+				'로그인 처리 중 오류가 발생했습니다.',
+			);
+		}
 		return res.redirect('/'); // 임시
 	}
 
