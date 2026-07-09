@@ -18,7 +18,7 @@ export class SessionAuthGuard implements CanActivate {
 		const cookieHeader: string = request.headers.cookie ?? '';
 		const hadSessionCookie = cookieHeader.includes('connect.sid=');
 
-		if (!hadSessionCookie) {
+		if (hadSessionCookie) {
 			throw new UnauthorizedException(
 				'세션이 만료 되었습니다. 다시 로그인 후 이용해주세요.',
 			);
