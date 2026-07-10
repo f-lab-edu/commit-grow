@@ -99,6 +99,7 @@ function createTestEnv() {
 		},
 		session: {
 			secret: 'secret',
+			cookieName: 'test-session',
 		},
 	};
 }

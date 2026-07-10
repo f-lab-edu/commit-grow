@@ -22,10 +22,14 @@
 		"strictBindCallApply": false,
 		"noFallthroughCasesInSwitch": false,
 		"paths": {
+			"@app/common": ["libs/common/src"],
+			"@app/common/*": ["libs/common/src/*"],
 			"@app/entity": ["libs/entity/src"],
 			"@app/entity/*": ["libs/entity/src/*"],
 			"@app/environment": ["libs/environment/src"],
 			"@app/environment/*": ["libs/environment/src/*"],
+			"@app/github-client": ["libs/github-client/src"],
+			"@app/github-client/*": ["libs/github-client/src/*"],
 			"@app/logger": ["libs/logger/src"],
 			"@app/logger/*": ["libs/logger/src/*"]
 		}

@@ -19,6 +19,15 @@
 				"tsConfigPath": "apps/api/tsconfig.app.json"
 			}
 		},
+		"common": {
+			"type": "library",
+			"root": "libs/common",
+			"entryFile": "index",
+			"sourceRoot": "libs/common/src",
+			"compilerOptions": {
+				"tsConfigPath": "libs/common/tsconfig.lib.json"
+			}
+		},
 		"entity": {
 			"type": "library",
 			"root": "libs/entity",
@@ -35,6 +44,15 @@
 			"sourceRoot": "libs/environment/src",
 			"compilerOptions": {
 				"tsConfigPath": "libs/environment/tsconfig.lib.json"
+			}
+		},
+		"github-client": {
+			"type": "library",
+			"root": "libs/github-client",
+			"entryFile": "index",
+			"sourceRoot": "libs/github-client/src",
+			"compilerOptions": {
+				"tsConfigPath": "libs/github-client/tsconfig.lib.json"
 			}
 		},
 		"logger": {

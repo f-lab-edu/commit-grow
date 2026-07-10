@@ -1,9 +1,26 @@
-import { Controller, Get, Res, UseGuards } from '@nestjs/common';
-import type { Response } from 'express';
+import {
+	Controller,
+	Get,
+	InternalServerErrorException,
+	Req,
+	Res,
+	UseGuards,
+} from '@nestjs/common';
+import type { Request, Response } from 'express';
+import { Logger } from 'nestjs-pino/Logger';
+import { Auth } from '../decorators/Auth.decorator';
+import { LoginSession } from '../decorators/LoginSession.decorator';
+import { AuthService } from './auth.service';
+import { SessionDto } from './dto/SessionDto';
 import { GithubAuthGuard } from './guards/github-auth.guard';
 
 @Controller('auth')
 export class AuthController {
+	constructor(
+		private readonly logger: Logger,
+		private readonly authService: AuthService,
+	) {}
+
 	@Get('github')
 	@UseGuards(GithubAuthGuard)
 	// biome-ignore lint/suspicious/noEmptyBlockStatements: passport 로직
@@ -11,7 +28,28 @@ export class AuthController {
 
 	@Get('github/callback')
 	@UseGuards(GithubAuthGuard)
-	async githubCallback(@Res() res: Response) {
+	async githubCallback(@Req() req: Request, @Res() res: Response) {
+		return res.redirect('/'); // 임시
+	}
+
+	@Get('signout')
+	@Auth()
+	async signout(
+		@Req() req: Request,
+		@Res() res: Response,
+		@LoginSession() sessionDto: SessionDto,
+	) {
+		try {
+			await this.deauthenticate(req);
+			await this.destroySession(req);
+			await this.authService.signout(sessionDto);
+		} catch (error) {
+			this.logger.error('로그아웃 처리 중 오류가 발생했습니다.', error);
+			throw new InternalServerErrorException(
+				'로그아웃 처리 중 오류가 발생했습니다.',
+			);
+		}
+
 		return res.redirect('/'); // 임시
 	}
 
@@ -37,4 +75,25 @@ export class AuthController {
       </html>
     `);
 	}
+
+	private async deauthenticate(req: Request) {
+		await runCallback((callback) => req.logout(callback));
+	}
+	private async destroySession(req: Request) {
+		await runCallback((callback) => req.session.destroy(callback));
+	}
+}
+
+function runCallback(
+	fn: (callback: (err?: Error | null) => void) => void,
+): Promise<void> {
+	return new Promise((resolve, reject) => {
+		fn((err) => {
+			if (err) {
+				reject(err);
+				return;
+			}
+			resolve();
+		});
+	});
 }

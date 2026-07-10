@@ -1,7 +1,9 @@
 import { User } from '@app/entity/domain/User.entity';
+import { GithubClientService } from '@app/github-client';
 import { EntityManager, EntityRepository } from '@mikro-orm/core';
 import { InjectRepository } from '@mikro-orm/nestjs';
 import { Injectable } from '@nestjs/common';
+import { SessionDto } from './dto/SessionDto';
 
 @Injectable()
 export class AuthService {
@@ -9,7 +11,12 @@ export class AuthService {
 		private readonly em: EntityManager,
 		@InjectRepository(User)
 		private readonly userRepository: EntityRepository<User>,
+		private readonly githubClientService: GithubClientService,
 	) {}
+
+	async signout(sessionDto: SessionDto): Promise<void> {
+		await this.githubClientService.revokeAccessToken(sessionDto.accessToken);
+	}
 
 	async oauthLogin(
 		githubId: string,
