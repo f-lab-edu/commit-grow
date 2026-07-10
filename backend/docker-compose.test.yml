@@ -1,0 +1,20 @@
+name: commit-grow-test
+
+services:
+  postgres:
+    container_name: commit-grow-test-postgres
+    image: postgres:18.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: commit_grow
+      POSTGRES_PASSWORD: commit_grow
+      POSTGRES_DB: commit_grow
+    ports:
+      - "5433:5432"
+
+  redis:
+    container_name: commit-grow-test-redis
+    image: redis:7.4
+    restart: unless-stopped
+    ports:
+      - "6380:6379"

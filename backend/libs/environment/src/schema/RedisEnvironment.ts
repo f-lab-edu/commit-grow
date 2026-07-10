@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString, Min } from 'class-validator';
 
 export class RedisEnvironment {
 	@IsString()
@@ -8,4 +8,19 @@ export class RedisEnvironment {
 	@IsNumber()
 	@IsNotEmpty()
 	port: number;
+
+	@IsNumber()
+	@IsNotEmpty()
+	@Min(1)
+	maxConnectRetries: number;
+
+	@IsNumber()
+	@IsNotEmpty()
+	@Min(1)
+	reconnectStepMs: number;
+
+	@IsNumber()
+	@IsNotEmpty()
+	@Min(1)
+	maxReconnectStepMs: number;
 }

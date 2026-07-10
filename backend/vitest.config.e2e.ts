@@ -7,7 +7,7 @@ export default defineConfig({
 	test: {
 		root: '.',
 		environment: 'node',
-		include: ['apps/api/e2e-test/**/*.e2e.spec.ts'],
+		include: ['apps/api/e2e-test/**/*.e2e.spec.ts', 'libs/**/*.e2e.spec.ts'],
 		setupFiles: ['./vitest.setup.ts'],
 		testTimeout: 5_000,
 		env: {

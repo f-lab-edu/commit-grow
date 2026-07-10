@@ -96,6 +96,9 @@ function createTestEnv() {
 		redis: {
 			host: 'localhost',
 			port: 6379,
+			maxConnectRetries: 5,
+			reconnectStepMs: 200,
+			maxReconnectStepMs: 2000,
 		},
 		session: {
 			secret: 'secret',

@@ -1,12 +1,15 @@
 import { SystemException } from '@app/common/exception/SystemException';
+import { createRedisClient } from '@app/common/redis/createRedisClient';
 import { setWebBootstrap } from '@app/common/web-bootstrap/setWebBootstrap';
 import { EnviromentUtil } from '@app/environment/EnviromentUtil';
 import { GithubClientModule, GithubClientService } from '@app/github-client';
-import type { ExecutionContext, INestApplication } from '@nestjs/common';
+import { type ExecutionContext, type INestApplication } from '@nestjs/common';
 import { AuthModule } from 'apps/api/src/auth/auth.module';
 import { SessionDto } from 'apps/api/src/auth/dto/SessionDto';
 import { GithubAuthGuard } from 'apps/api/src/auth/guards/github-auth.guard';
 import { createTestingModule } from 'libs/common/test-helper/createTestingModule';
+import { Logger } from 'nestjs-pino';
+import { RedisClientType } from 'redis';
 import request from 'supertest';
 import {
 	afterAll,
@@ -22,6 +25,9 @@ import {
 describe('AuthController E2E Test', () => {
 	let app: INestApplication;
 	const mockRevokeAccessToken = vi.fn();
+	let redisClient: RedisClientType;
+	const environment = EnviromentUtil.getEnv();
+	const sessionCookieName = environment.session.cookieName;
 
 	beforeAll(async () => {
 		const builder = await createTestingModule([AuthModule])
@@ -63,13 +69,16 @@ describe('AuthController E2E Test', () => {
 
 		app = builder.createNestApplication();
 
-		setWebBootstrap(app, EnviromentUtil.getEnv());
+		redisClient = await createRedisClient(environment.redis, app.get(Logger));
+
+		setWebBootstrap(app, environment, redisClient);
 
 		await app.init();
 	});
 
 	afterAll(async () => {
 		await app?.close();
+		await redisClient.quit();
 	});
 
 	beforeEach(() => {
@@ -78,6 +87,36 @@ describe('AuthController E2E Test', () => {
 
 	afterEach(() => {
 		vi.restoreAllMocks();
+	});
+
+	describe('GET /api/v1/auth/github/callback', () => {
+		it('로그인 성공시 / 로 302 리다이렉트되고 세션 쿠키가 발급된다.', async () => {
+			//given
+			const agent = request.agent(app.getHttpServer());
+
+			//when
+			const result = await agent.get('/api/v1/auth/github/callback');
+
+			//then
+			expect(result.status).toBe(302);
+			expect(result.headers.location).toBe('/');
+			expect(result.headers['set-cookie']).toEqual(
+				expect.arrayContaining([expect.stringContaining(sessionCookieName)]),
+			);
+		});
+
+		it('콜백 로그인 후 인증이 필요한 엔드포인트에 접근할 수 있다.', async () => {
+			//given
+			const agent = request.agent(app.getHttpServer());
+			mockRevokeAccessToken.mockResolvedValue(undefined);
+			await agent.get('/api/v1/auth/github/callback');
+
+			//when
+			const result = await agent.get('/api/v1/auth/signout');
+
+			//then
+			expect(result.status).toBe(302);
+		});
 	});
 
 	describe('GET /api/v1/signout', () => {
