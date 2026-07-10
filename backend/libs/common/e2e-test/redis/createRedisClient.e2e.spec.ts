@@ -42,15 +42,14 @@ describe('createRedisClient E2E Test', () => {
 			);
 
 		// then
-		// 실제 소요 시간(약 N초)은 실행마다 달라지므로 스냅샷 대신 정규식으로 검증한다
-		await expect(action()).rejects.toThrow(
-			/^Redis 연결에 실패했습니다\. 5회 재시도\(약 [\d.]+초 소요\) 후 연결을 중단합니다$/,
+		await expect(action()).rejects.toThrowErrorMatchingInlineSnapshot(
+			`[Error: Redis 연결에 실패했습니다. 5회 재시도(약 3.0초) 후 연결을 중단합니다]`,
 		);
 		// 초기 연결 1회 + 재시도 maxConnectRetries회마다 error 이벤트가 발생한다
 		expect(logger.error).toHaveBeenCalledTimes(maxConnectRetries + 1);
 		expect(logger.error).toHaveBeenCalledWith(
-			expect.any(Error),
 			expect.stringContaining('Redis 접속 실패'),
+			expect.any(Error),
 		);
 	});
 });
