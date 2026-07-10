@@ -9,6 +9,7 @@ import { SessionDto } from 'apps/api/src/auth/dto/SessionDto';
 import { GithubAuthGuard } from 'apps/api/src/auth/guards/github-auth.guard';
 import { createTestingModule } from 'libs/common/test-helper/createTestingModule';
 import { Logger } from 'nestjs-pino';
+import { RedisClientType } from 'redis';
 import request from 'supertest';
 import {
 	afterAll,
@@ -24,6 +25,7 @@ import {
 describe('AuthController E2E Test', () => {
 	let app: INestApplication;
 	const mockRevokeAccessToken = vi.fn();
+	let redisClient: RedisClientType;
 
 	beforeAll(async () => {
 		const builder = await createTestingModule([AuthModule])
@@ -66,10 +68,7 @@ describe('AuthController E2E Test', () => {
 		app = builder.createNestApplication();
 
 		const environment = EnviromentUtil.getEnv();
-		const redisClient = await createRedisClient(
-			environment.redis,
-			app.get(Logger),
-		);
+		redisClient = await createRedisClient(environment.redis, app.get(Logger));
 
 		setWebBootstrap(app, environment, redisClient);
 
@@ -78,6 +77,7 @@ describe('AuthController E2E Test', () => {
 
 	afterAll(async () => {
 		await app?.close();
+		await redisClient.quit();
 	});
 
 	beforeEach(() => {
