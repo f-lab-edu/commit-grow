@@ -22,23 +22,40 @@ export async function createRedisClient(
 	const maxReconnectStepMs =
 		options.maxReconnectStepMs || DEFAULT_MAX_RECONNECT_STEP_MS;
 
+	const connectStartedAt = Date.now();
 	const redisClient = createClient({
 		socket: {
 			host: options.host,
 			port: options.port,
-			reconnectStrategy: (retries) =>
-				retries > maxConnectRetries
-					? new SystemException(
-							`Redis 연결 최대 재시도 횟수 ${maxConnectRetries} 를 초과했습니다`,
-						)
-					: Math.min(retries * reconnectStepMs, maxReconnectStepMs),
+			reconnectStrategy: (retries: number) => {
+				const retryCount = retries + 1;
+
+				if (retryCount > maxConnectRetries) {
+					return new SystemException(
+						`Redis 연결에 실패했습니다. ${maxConnectRetries}회 재시도(약 ${getElapsedSeconds(connectStartedAt)}초 소요) 후 연결을 중단합니다`,
+					);
+				}
+
+				return Math.min(retryCount * reconnectStepMs, maxReconnectStepMs);
+			},
 		},
 	});
 
 	redisClient.on('error', (err) =>
-		logger.error(`Redis 접속 실패 ${new Date().toISOString()}`, err),
+		logger.error(
+			err,
+			`Redis 접속 실패 (약 ${getElapsedSeconds(connectStartedAt)}초 소요)`,
+		),
 	);
 	await redisClient.connect();
 
+	logger.log(
+		`Redis 연결 성공 (약 ${getElapsedSeconds(connectStartedAt)}초 소요)`,
+	);
+
 	return redisClient;
+}
+
+function getElapsedSeconds(startTime: number): string {
+	return ((Date.now() - startTime) / 1000).toFixed(1);
 }
