@@ -13,4 +13,14 @@ export class RedisEnvironment {
 	@IsNotEmpty()
 	@Min(1)
 	maxConnectRetries: number;
+
+	@IsNumber()
+	@IsNotEmpty()
+	@Min(1)
+	reconnectStepMs: number;
+
+	@IsNumber()
+	@IsNotEmpty()
+	@Min(1)
+	maxReconnectStepMs: number;
 }

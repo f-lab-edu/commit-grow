@@ -42,8 +42,8 @@ describe('createRedisClient E2E Test', () => {
 			`[Error: Redis 연결 최대 재시도 횟수 5 를 초과했습니다]`,
 		);
 		expect(logger.error).toHaveBeenCalledWith(
+			expect.stringContaining('Redis 접속 실패'),
 			expect.any(Error),
-			'Redis client error',
 		);
 	});
 });

@@ -26,6 +26,8 @@ describe('AuthController E2E Test', () => {
 	let app: INestApplication;
 	const mockRevokeAccessToken = vi.fn();
 	let redisClient: RedisClientType;
+	const environment = EnviromentUtil.getEnv();
+	const sessionCookieName = environment.session.cookieName;
 
 	beforeAll(async () => {
 		const builder = await createTestingModule([AuthModule])
@@ -67,7 +69,6 @@ describe('AuthController E2E Test', () => {
 
 		app = builder.createNestApplication();
 
-		const environment = EnviromentUtil.getEnv();
 		redisClient = await createRedisClient(environment.redis, app.get(Logger));
 
 		setWebBootstrap(app, environment, redisClient);
@@ -100,7 +101,7 @@ describe('AuthController E2E Test', () => {
 			expect(result.status).toBe(302);
 			expect(result.headers.location).toBe('/');
 			expect(result.headers['set-cookie']).toEqual(
-				expect.arrayContaining([expect.stringContaining('connect.sid')]),
+				expect.arrayContaining([expect.stringContaining(sessionCookieName)]),
 			);
 		});
 
