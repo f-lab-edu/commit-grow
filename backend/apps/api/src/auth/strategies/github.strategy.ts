@@ -39,12 +39,11 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
 		profile: Profile,
 		done: (err: any, user: any) => void,
 	): Promise<void> {
-		const resposneDto = GithubOauthCallbackResponseDto.of(accessToken, profile);
+		const responseDto = GithubOauthCallbackResponseDto.of(accessToken, profile);
 
-		const validationErrors = validateSync(resposneDto);
+		const validationErrors = validateSync(responseDto);
 		if (validationErrors.length > 0) {
 			throw new InternalServerErrorException(
-				validationErrors,
 				'oauth 로그인 중 에러가 발생하였습니다. 고객센터에 문의 주세요.',
 			);
 		}

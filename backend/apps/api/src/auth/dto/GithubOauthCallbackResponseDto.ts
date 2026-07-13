@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsNotEmpty, IsString, ValidateNested } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, ValidateNested } from 'class-validator';
 import { Profile } from 'passport-github2';
 
 class GithubOauthProfileDto {
@@ -11,7 +11,7 @@ class GithubOauthProfileDto {
 	@IsNotEmpty()
 	public readonly username: string;
 
-	@IsString()
+	@IsEmail()
 	@IsNotEmpty()
 	public readonly email: string;
 

@@ -29,30 +29,32 @@ describe('GithubOauthCallbackResponseDto Unit Test', () => {
 		expect(validateErrors[0].property).toBe('accessToken');
 	});
 
-	it('profile.id가 없으면 에러가 발생한다.', () => {
+	it('profile.email이 유효하지 않으면 에러가 발생한다.', () => {
 		// given
 		const dto = createTestResponse();
-		delete (dto.profile as { id?: string }).id;
+		dto.profile.email = 'un-validated-email';
 
 		// when
 		const responseDto = plainToClass(GithubOauthCallbackResponseDto, dto);
 		const validateErrors = validateSync(responseDto);
 
 		// then
-		expect(validateErrors).not.toHaveLength(0);
-		expect(validateErrors[0].property).toBe('profile');
+		expect(validateErrors).toHaveLength(1);
+		expect(validateErrors![0].children![0].constraints).toMatchInlineSnapshot(`
+			{
+			  "isEmail": "email must be an email",
+			}
+		`);
 	});
 });
 
-function createTestResponse(
-	overrides: Partial<{ accessToken: string }> = {},
-) {
+function createTestResponse(overrides: Partial<{ accessToken: string }> = {}) {
 	return {
 		accessToken: 'test-access-token',
 		profile: {
 			id: 'test-id',
 			username: 'test-username',
-			email: 'test-email',
+			email: 'test@example.com',
 		},
 		...overrides,
 	};

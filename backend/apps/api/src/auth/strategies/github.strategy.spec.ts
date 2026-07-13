@@ -1,5 +1,6 @@
 import { Environment } from '@app/environment/schema/Environment';
 import { OAuthGithubEnvironment } from '@app/environment/schema/OAuthGithubEnvironment';
+import { InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { plainToInstance } from 'class-transformer';
 import { beforeAll, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
@@ -67,23 +68,21 @@ describe('GithubStrategy Unit Test', () => {
 			);
 		});
 
-		it('callback 응답에 문제가 있는 경우, Exception이 발생한다.', () => {
+		it('callback 응답에 문제가 있는 경우, Exception이 발생한다.', async () => {
 			// given
 			const response = createValidateGtihubResponse();
 			const unValidatedToken = '';
 			response.accessToken = unValidatedToken;
 
-			// when
-			expect(() =>
+			// when & then
+			await expect(
 				strategy.validate(
 					response.accessToken,
 					response.refreshToken,
 					response.profile,
 					done,
 				),
-			).rejects.toBeInstanceOf(
-				`[InternalServerErrorException: Internal Server Error Exception]`,
-			);
+			).rejects.toBeInstanceOf(InternalServerErrorException);
 		});
 	});
 });
@@ -94,7 +93,7 @@ function createValidateGtihubResponse() {
 	const profile = {
 		id: 'test-id',
 		username: 'test-username',
-		emails: [{ value: 'test-email' }],
+		emails: [{ value: 'test@example.com' }],
 		profileUrl: 'http://github.com/test-username',
 		provider: 'github',
 		displayName: 'test-username',
