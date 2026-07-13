@@ -51,7 +51,7 @@ describe('GithubStrategy Unit Test', () => {
 
 		it('callback 응답에 문제가 없는 경우, 인증을 통과한다.', async () => {
 			// given
-			const validateResponse = createValidateGtihubResponse();
+			const validateResponse = createValidateGithubResponse();
 
 			// when
 			await strategy.validate(
@@ -70,7 +70,7 @@ describe('GithubStrategy Unit Test', () => {
 
 		it('callback 응답에 문제가 있는 경우, Exception이 발생한다.', async () => {
 			// given
-			const response = createValidateGtihubResponse();
+			const response = createValidateGithubResponse();
 			const unValidatedToken = '';
 			response.accessToken = unValidatedToken;
 
@@ -87,7 +87,7 @@ describe('GithubStrategy Unit Test', () => {
 	});
 });
 
-function createValidateGtihubResponse() {
+function createValidateGithubResponse() {
 	const accessToken = 'test-access-token';
 	const refreshToken = 'test-refresh-token';
 	const profile = {
