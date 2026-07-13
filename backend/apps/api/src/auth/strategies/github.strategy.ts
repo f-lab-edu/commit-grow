@@ -49,9 +49,9 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
 		}
 
 		const user = await this.authService.oauthLogin(
-			profile.id,
-			profile.username || '',
-			profile.emails?.[0]?.value || '',
+			responseDto.profile.id,
+			responseDto.profile.username,
+			responseDto.profile.email,
 		);
 
 		done(null, new SessionDto(user.id, accessToken));
