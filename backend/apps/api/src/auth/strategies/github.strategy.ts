@@ -4,6 +4,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { validateSync } from 'class-validator';
+import { Logger } from 'nestjs-pino/Logger';
 import { Profile, Strategy } from 'passport-github2';
 import { AuthService } from '../auth.service';
 import { GithubOauthCallbackResponseDto } from '../dto/GithubOauthCallbackResponseDto';
@@ -14,6 +15,7 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
 	constructor(
 		config: ConfigService<Environment>,
 		private readonly authService: AuthService,
+		private readonly logger: Logger,
 	) {
 		const githubConfig =
 			config.getOrThrow<OAuthGithubEnvironment>('oauthGithub');
@@ -43,6 +45,10 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
 
 		const validationErrors = validateSync(responseDto);
 		if (validationErrors.length > 0) {
+			this.logger.error(
+				'GitHub OAuth 콜백 응답 검증에 실패하였습니다.',
+				validationErrors,
+			);
 			throw new InternalServerErrorException(
 				'oauth 로그인 중 에러가 발생하였습니다. 고객센터에 문의 주세요.',
 			);

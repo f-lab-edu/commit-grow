@@ -3,6 +3,7 @@ import { OAuthGithubEnvironment } from '@app/environment/schema/OAuthGithubEnvir
 import { InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { plainToInstance } from 'class-transformer';
+import { Logger } from 'nestjs-pino/Logger';
 import { beforeAll, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 import { AuthService } from '../auth.service';
 import { SessionDto } from '../dto/SessionDto';
@@ -14,9 +15,12 @@ describe('GithubStrategy Unit Test', () => {
 			// given
 			const config = createMockConfigService(createValidGithubConfig());
 			const authService = {} as AuthService;
+			const logger = createMockLogger();
 
 			// then
-			expect(() => new GithubStrategy(config, authService)).not.toThrow();
+			expect(
+				() => new GithubStrategy(config, authService, logger),
+			).not.toThrow();
 		});
 
 		it('잘못된 OAuth 설정이면 생성 시 에러가 발생한다.', () => {
@@ -25,9 +29,12 @@ describe('GithubStrategy Unit Test', () => {
 				createValidGithubConfig({ clientId: '' }),
 			);
 			const authService = {} as AuthService;
+			const logger = createMockLogger();
 
 			// then
-			expect(() => new GithubStrategy(config, authService)).toThrow();
+			expect(
+				() => new GithubStrategy(config, authService, logger),
+			).toThrow();
 		});
 	});
 
@@ -41,6 +48,7 @@ describe('GithubStrategy Unit Test', () => {
 				{
 					oauthLogin: vi.fn().mockResolvedValue({ id: 1 }),
 				} as unknown as AuthService,
+				createMockLogger(),
 			);
 			done = vi.fn();
 		});
@@ -123,4 +131,10 @@ function createMockConfigService(
 	return {
 		getOrThrow: vi.fn().mockReturnValue(oauthGithub),
 	} as unknown as ConfigService<Environment>;
+}
+
+function createMockLogger(): Logger {
+	return {
+		error: vi.fn(),
+	} as unknown as Logger;
 }
