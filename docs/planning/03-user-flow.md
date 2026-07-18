@@ -25,7 +25,7 @@
 [S-04 진입] 액션포인트 리뷰
   GET /action-points?status=TODO,FAILED,ROUTINE
   - TODO·FAILED·ROUTINE 액션포인트 있음 → 항목별 "완료"/"실패"/"루틴"/"철회" 선택 UI 노출(전이 제한 없음)
-      선택 완료 → PATCH /action-points/review
+      선택 → 로컬 상태로만 보관(API 호출 없음, 회고 최종 저장 시 함께 반영)
   - TODO·FAILED·ROUTINE 액션포인트 없음 → 이 단계 스킵
   ↓
 Git 활동 자동 수집
@@ -49,16 +49,19 @@ AI 질문 생성
 [S-06 최종확인] 누적 K/P/T 전체 검토 + 액션포인트 작성
   사용자가 직접 K/P/T 항목 추가/수정/삭제 가능 (클라이언트 로컬 편집)
   진입 시 POST /retrospects/action-points/generate (확정된 Try 기반 후보 생성, 저장 없음)
-    → 신규 후보 + S-04에서 이월된 기존 FAILED·ROUTINE 항목을 한 목록에서 편집
-    → 신규 후보/직접 추가 항목: 수정·삭제 자유. 기존 이월 항목: content 수정 또는 철회(삭제)만 가능(status 변경 불가)
+    → 신규 후보 목록 구성: Try 기반 AI 후보 + S-04에서 "실패"/"루틴"으로 결정한 항목을 참고해 만든 파생 초안("루틴/실패 생성 액션", 내용 미리 채움) + 사용자 직접 추가
+    → 이 목록의 모든 항목은 저장 전 로컬 상태로 동일하게 자유 편집·제거 가능 (아직 API에 반영 안 된 상태이므로 삭제 개념 없이 목록에서 빼면 됨)
+    → S-04에서 리뷰한 기존 액션포인트 자체(원본 row)는 여기서 수정하지 않음 — 내용은 그대로 두고 상태만 최종 저장 시 반영됨
   "저장" 클릭
   ↓
 POST /retrospects
   body: { retrospectDate, sourceType, activitySnapshot | manualInput,
           answers: [...], kpt: { keep: [...], problem: [...], try: [...] },
-          actionPoints: [{ id?, content, removed? }] }
+          actionPointDecisions: [{ id, decision: 'DONE' | 'FAILED' | 'ROUTINE' | 'REMOVED' }],
+          actionPoints: [{ content }] }
   서버 처리:
-    (동기) actionPoints 반영 — id 없음: 신규 생성(TODO, 활성 16개 초과분은 생성 생략) / id+content: 기존 항목 수정 / id+removed: REMOVED로 전환
+    (동기) actionPointDecisions 반영 — 기존 액션포인트 상태 갱신(DONE은 completedAt도, FAILED는 failureCount +1), reviewedAt 공통 갱신
+    (동기) actionPoints 반영 — 전부 신규 생성(TODO), 활성 16개 초과분은 생성 생략
     (동기) Retrospect, RetrospectAnswer, KptItem 저장, 스트릭 +1
     (비동기) 요약/인사이트/제목 분석 job 큐 적재 (summaryStatus = ANALYZING)
   → { retrospectId, actionPoints: [...], summaryStatus: 'ANALYZING' } 응답
@@ -76,7 +79,7 @@ POST /retrospects
 | 기존 TODO·FAILED·ROUTINE 액션포인트 존재 | S-04에서 리뷰 UI 노출 / 없으면 스킵 |
 | Git 활동 존재 | 활동 기반 질문 생성 / 없으면 직접 입력 후 질문 생성 |
 | 질문 답변 완료 여부 | 모두 답변 전에는 다음 단계로 진행 불가 |
-| Try 중 실행 가능 항목 유무 | 0개면 액션포인트 후보 없이 진행(기존 이월 항목 편집만 가능) |
+| Try 중 실행 가능 항목 유무 | 0개면 Try 기반 후보 없이 진행(실패·루틴 참고 초안/직접 추가는 계속 가능) |
 | 활성 액션포인트 총량(16개) 초과 여부 | 초과분은 저장 시 신규 생성 생략 |
 
 ### 설계 원칙과의 연결
@@ -84,6 +87,7 @@ POST /retrospects
 - 단계형 폼을 쓰는 이유: 챗봇/전체 초안 생성은 "회고의 본질(스스로 사고)"을 흐리므로 배제 ([[00-overview|서비스 개요]] 핵심 가치 참고)
 - K/P/T는 사용자 답변의 재구성이며 AI가 처음부터 창작하지 않음 → `POST /retrospects/kpt/reconstruct`는 answer 원문을 반드시 입력으로 받아야 함
 - Try(서술형)와 액션포인트(짧은 실행 단위)는 별도 개념. 액션포인트는 최종확인(S-06) 단계에서 Try 기반으로 AI가 후보를 생성하고, 사용자가 확정한 내용이 저장 시점에 반영됨
+- 액션포인트는 생성 후 내용이 바뀌지 않음. 리뷰에서 실패·루틴으로 결정된 기존 항목은 상태만 바뀔 뿐 그대로 유지되고, 내용을 조정하고 싶으면 그 항목을 참고한 새 액션포인트를 작성 단계에서 추가하는 방식으로 처리(원본과의 연결 없음, 맥락은 sourceRetrospectId로 추적)
 
 ## 3. 회고 기록 조회 / 삭제 플로우
 

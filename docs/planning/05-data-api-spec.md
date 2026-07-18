@@ -83,16 +83,18 @@ Retrospect
 | --- | --- | --- |
 | id | uuid | PK |
 | userId | uuid (FK → User) | 소유자 |
-| sourceRetrospectId | uuid (FK → Retrospect) | 추출 원본 회고 (Try 항목 기반) |
-| content | text | 실행 단위 내용 (짧은 문장). 사용자 직접 작성/수정 시 보정 없이 입력 그대로 저장 |
+| sourceRetrospectId | uuid (FK → Retrospect) | 생성 원본 회고 |
+| content | text | 실행 단위 내용 (짧은 문장). 생성 시점 입력 그대로 저장(존댓말·표준어 보정 없음). **생성 후 수정 불가** — 조정이 필요하면 새 액션포인트를 추가 |
 | status | enum(`TODO`, `DONE`, `FAILED`, `ROUTINE`, `REMOVED`) | 진행 상태 (FT-04) |
 | failureCount | int, default 0 | `FAILED` 처리될 때마다 +1. 별도 이력 테이블 없이 카운트만 유지 |
 | completedAt | datetime, nullable | `DONE` 처리 시각 |
 | reviewedAt | datetime, nullable | 리뷰 단계 4개 결정(`DONE`/`FAILED`/`ROUTINE`/`REMOVED`) 공통 갱신 시각 |
 
 - 회고 삭제 시 `sourceRetrospectId`가 가리키는 액션포인트도 함께 삭제 ([[03-user-flow]] 참고)
+- 리뷰 결정은 화면(S-04)에서 즉시 반영되지 않고 로컬 상태로만 보관되다가, 회고 최종 저장(`POST /retrospects`) 시 다른 변경사항과 함께 한 번에 반영됨(전용 리뷰 반영 API 없음)
 - 상태 전이 제한 없음 — 리뷰 단계에서는 현재 상태와 무관하게 4개 결정 모두 선택 가능(예: `ROUTINE` → `FAILED` 가능)
-- `REMOVED`는 소프트 삭제. 리뷰 단계의 "철회" 선택과 작성 단계(FT-07)의 기존 항목 삭제가 동일 메커니즘 사용
+- `REMOVED`는 소프트 삭제이자 유일한 삭제 경로(리뷰 단계 "철회" 선택으로만 발생). 작성 단계의 신규 후보는 저장 전 로컬 상태라 별도 삭제 개념 없이 목록에서 빼면 됨
+- 리뷰에서 "실패"/"루틴"을 선택해도 해당 항목은 상태만 `FAILED`/`ROUTINE`으로 바뀌고 content는 그대로 유지됨(수정 불가 원칙과 일관). 내용을 조정하고 싶으면(강도 조절 등) 그 항목을 참고해 작성 단계에서 **새 액션포인트**를 추가하는 방식으로 처리 — 원본과 FK 연결은 두지 않고, 맥락 추적은 `sourceRetrospectId`로 원본 회고를 따라가는 것으로 충분하다고 판단
 - 사용자당 활성(`TODO`+`FAILED`+`ROUTINE`) 액션포인트 최대 16개. 초과 시 저장 단계에서 신규 액션포인트 생성을 생략(회고 저장 자체는 정상 진행)
 
 ### 1.7 저장하지 않는 값 (파생 데이터)
@@ -149,8 +151,9 @@ Retrospect
 | Method | Path | Auth | 설명 |
 | --- | --- | --- | --- |
 | GET | `/action-points?status=TODO,FAILED,ROUTINE` | 필요 | 상태별 액션포인트 목록 (복수 상태 동시 조회 가능 — 대시보드·리뷰 화면은 TODO+FAILED+ROUTINE 조회) |
-| PATCH | `/action-points/review` | 필요 | 회고 작성 진입(S-04) 시 기존 항목별 완료/실패/루틴/철회 일괄 반영. body: `{ items: [{ id, decision: 'DONE' \| 'FAILED' \| 'ROUTINE' \| 'REMOVED' }] }` |
 | POST | `/retrospects/action-points/generate` | 필요 | 최종확인(S-06) 진입 시 확정된 Try 목록 기반 액션포인트 후보 생성 (최대 Try 개수만큼, 저장 없음) |
+
+리뷰 단계(S-04)의 완료/실패/루틴/철회 결정은 별도 API 없이 로컬 상태로 보관되다가 `POST /retrospects`에 `actionPointDecisions`로 포함되어 한 번에 반영된다(2.5 참고).
 
 ### 2.5 회고 (제안)
 
@@ -158,7 +161,7 @@ Retrospect
 | --- | --- | --- | --- |
 | POST | `/retrospects/questions/generate` | 필요 | 활동 또는 직접 입력 기반 질문 생성 (최대 3개, 저장 없음) |
 | POST | `/retrospects/kpt/reconstruct` | 필요 | 답변 1건을 K/P/T로 재구성해 누적 결과 반환 (저장 없음) |
-| POST | `/retrospects` | 필요 | 회고 최종 저장. 클라이언트가 확정한 actionPoints 반영 + 분석 job 비동기 적재 |
+| POST | `/retrospects` | 필요 | 회고 최종 저장. 액션포인트 리뷰 결정 반영 + 신규 액션포인트 생성 + 분석 job 비동기 적재 |
 | GET | `/retrospects?q=&page=` | 필요 | 목록 조회/검색 |
 | GET | `/retrospects/:id` | 필요 | 상세 조회 (질문/답변, K/P/T, 요약/인사이트, 관련 액션포인트 포함) |
 | DELETE | `/retrospects/:id` | 필요 | 회고 삭제 (관련 액션포인트 함께 삭제) |
@@ -176,22 +179,26 @@ Retrospect
     "problem": ["..."],
     "try": ["..."]
   },
+  "actionPointDecisions": [
+    { "id": "existing-uuid-1", "decision": "DONE" },
+    { "id": "existing-uuid-2", "decision": "FAILED" },
+    { "id": "existing-uuid-3", "decision": "ROUTINE" },
+    { "id": "existing-uuid-4", "decision": "REMOVED" }
+  ],
   "actionPoints": [
-    { "id": "existing-uuid", "content": "수정된 기존 항목 내용" },
-    { "id": "existing-uuid-2", "removed": true },
-    { "content": "신규 항목 (AI 후보 확정 또는 사용자 직접 추가, id 없음)" }
+    { "content": "신규 액션포인트 (Try 기반 AI 후보 확정 / 실패·루틴 항목을 참고해 조정한 후속 항목 / 사용자 직접 추가 — 전부 동일하게 처리)" }
   ]
 }
 
 // Response
 {
   "retrospectId": "...",
-  "actionPoints": [{ "id": "...", "content": "..." }],
+  "actionPoints": [{ "id": "...", "content": "...", "status": "TODO" }],
   "summaryStatus": "ANALYZING"
 }
 ```
 
-`actionPoints` 처리 규칙: `id` 있고 `removed` 없음 → 기존 항목 content 수정. `id` 있고 `removed: true` → 상태를 `REMOVED`로 전환. `id` 없음 → 신규 생성(`status: TODO`), 단 사용자의 활성 액션포인트 총량이 16개를 넘기면 초과분은 생성하지 않음.
+처리 규칙: `actionPointDecisions`는 기존 액션포인트의 `decision`에 따라 상태 갱신(`DONE`→완료+`completedAt`, `FAILED`→`failureCount` +1, `ROUTINE`/`REMOVED`는 상태만 전환), 4개 결정 공통으로 `reviewedAt` 갱신. `actionPoints`는 전부 신규 생성(`status: TODO`), 단 사용자의 활성 액션포인트 총량이 16개를 넘기면 초과분은 생성하지 않음.
 
 ### 2.6 배치 (내부, 제안)
 
