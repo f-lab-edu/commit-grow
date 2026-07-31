@@ -5,200 +5,204 @@
 
 /* Design tokens — Commit Grow Design System (Claude Design, synced via DesignSync MCP) */
 @theme {
-  /* ---- Fixed primitives ---- */
-  --color-point: #18f293;
-  --color-background: #ffffff;
-  --color-surface-1: #fbfbfc;
-  --color-surface-2: #fefefe;
-  --color-text: #3e3e40;
+	/* ---- Fixed primitives ---- */
+	--color-point: #18f293;
+	--color-background: #ffffff;
+	--color-surface-1: #fbfbfc;
+	--color-surface-2: #fefefe;
+	--color-text: #3e3e40;
 
-  /* ---- Neutral ramp ---- */
-  --neutral-0: var(--color-background);
-  --neutral-25: var(--color-surface-2);
-  --neutral-50: var(--color-surface-1);
-  --neutral-100: oklch(0.965 0.003 300);
-  --neutral-150: oklch(0.93 0.004 300);
-  --neutral-200: oklch(0.885 0.005 300);
-  --neutral-300: oklch(0.8 0.005 300);
-  --neutral-400: oklch(0.68 0.006 300);
-  --neutral-500: oklch(0.55 0.005 300);
-  --neutral-600: oklch(0.46 0.005 300);
-  --neutral-900: var(--color-text);
+	/* ---- Neutral ramp ---- */
+	--neutral-0: var(--color-background);
+	--neutral-25: var(--color-surface-2);
+	--neutral-50: var(--color-surface-1);
+	--neutral-100: oklch(0.965 0.003 300);
+	--neutral-150: oklch(0.93 0.004 300);
+	--neutral-200: oklch(0.885 0.005 300);
+	--neutral-300: oklch(0.8 0.005 300);
+	--neutral-400: oklch(0.68 0.006 300);
+	--neutral-500: oklch(0.55 0.005 300);
+	--neutral-600: oklch(0.46 0.005 300);
+	--neutral-900: var(--color-text);
 
-  /* ---- Point / accent ramp (oklch hue 156) ---- */
-  --accent-50: oklch(0.97 0.03 156);
-  --accent-100: oklch(0.94 0.065 156);
-  --accent-200: oklch(0.9 0.11 156);
-  --accent-300: oklch(0.865 0.16 156);
-  --accent-500: var(--color-point);
-  --accent-600: oklch(0.775 0.19 156);
-  --accent-700: oklch(0.69 0.175 156);
-  --accent-800: oklch(0.58 0.15 156);
-  --accent-900: oklch(0.47 0.13 156);
+	/* ---- Point / accent ramp (oklch hue 156) ---- */
+	--accent-50: oklch(0.97 0.03 156);
+	--accent-100: oklch(0.94 0.065 156);
+	--accent-200: oklch(0.9 0.11 156);
+	--accent-300: oklch(0.865 0.16 156);
+	--accent-500: var(--color-point);
+	--accent-600: oklch(0.775 0.19 156);
+	--accent-700: oklch(0.69 0.175 156);
+	--accent-800: oklch(0.58 0.15 156);
+	--accent-900: oklch(0.47 0.13 156);
 
-  /* ---- Negative ramp ---- */
-  --negative-100: oklch(0.94 0.035 25);
-  --negative-300: oklch(0.85 0.08 25);
-  --negative-500: oklch(0.58 0.16 25);
-  --negative-600: oklch(0.5 0.16 25);
+	/* ---- Negative ramp ---- */
+	--negative-100: oklch(0.94 0.035 25);
+	--negative-300: oklch(0.85 0.08 25);
+	--negative-500: oklch(0.58 0.16 25);
+	--negative-600: oklch(0.5 0.16 25);
 
-  /* ---- Semantic — backgrounds ---- */
-  --bg-canvas: var(--neutral-0);
-  --bg-surface: var(--neutral-50);
-  --bg-surface-alt: var(--neutral-25);
-  --bg-surface-hover: var(--neutral-100);
-  --bg-surface-pressed: var(--neutral-150);
-  --bg-accent-muted: var(--accent-50);
-  --bg-accent-solid: var(--accent-500);
-  --bg-accent-solid-hover: var(--accent-600);
-  --bg-accent-solid-active: var(--accent-700);
-  --bg-inverse: var(--neutral-900);
-  --bg-negative-muted: var(--negative-100);
-  --bg-negative-solid: var(--negative-500);
+	/* ---- Semantic — backgrounds ---- */
+	--bg-canvas: var(--neutral-0);
+	--bg-surface: var(--neutral-50);
+	--bg-surface-alt: var(--neutral-25);
+	--bg-surface-hover: var(--neutral-100);
+	--bg-surface-pressed: var(--neutral-150);
+	--bg-accent-muted: var(--accent-50);
+	--bg-accent-solid: var(--accent-500);
+	--bg-accent-solid-hover: var(--accent-600);
+	--bg-accent-solid-active: var(--accent-700);
+	--bg-inverse: var(--neutral-900);
+	--bg-negative-muted: var(--negative-100);
+	--bg-negative-solid: var(--negative-500);
 
-  /* ---- Semantic — text ---- */
-  --text-primary: var(--neutral-900);
-  --text-secondary: oklch(0.365 0.004 303 / 72%);
-  --text-tertiary: oklch(0.365 0.004 303 / 52%);
-  --text-disabled: oklch(0.365 0.004 303 / 32%);
-  --text-inverse: var(--neutral-0);
-  --text-on-accent: var(--neutral-900);
-  --text-negative: var(--negative-600);
-  --text-link: var(--neutral-900);
-  --text-link-decoration: var(--accent-700);
+	/* ---- Semantic — text ---- */
+	--text-primary: var(--neutral-900);
+	--text-secondary: oklch(0.365 0.004 303 / 72%);
+	--text-tertiary: oklch(0.365 0.004 303 / 52%);
+	--text-disabled: oklch(0.365 0.004 303 / 32%);
+	--text-inverse: var(--neutral-0);
+	--text-on-accent: var(--neutral-900);
+	--text-negative: var(--negative-600);
+	--text-link: var(--neutral-900);
+	--text-link-decoration: var(--accent-700);
 
-  /* ---- Semantic — borders ---- */
-  --border-subtle: oklch(0.365 0.004 303 / 7%);
-  --border-default: oklch(0.365 0.004 303 / 14%);
-  --border-strong: oklch(0.365 0.004 303 / 26%);
-  --border-focus: var(--accent-700);
-  --border-negative: var(--negative-500);
+	/* ---- Semantic — borders ---- */
+	--border-subtle: oklch(0.365 0.004 303 / 7%);
+	--border-default: oklch(0.365 0.004 303 / 14%);
+	--border-strong: oklch(0.365 0.004 303 / 26%);
+	--border-focus: var(--accent-700);
+	--border-negative: var(--negative-500);
 
-  /* ---- Heatmap scale ---- */
-  --heat-0: var(--neutral-100);
-  --heat-1: var(--accent-100);
-  --heat-2: var(--accent-300);
-  --heat-3: var(--accent-500);
-  --heat-4: var(--accent-900);
+	/* ---- Heatmap scale ---- */
+	--heat-0: var(--neutral-100);
+	--heat-1: var(--accent-100);
+	--heat-2: var(--accent-300);
+	--heat-3: var(--accent-500);
+	--heat-4: var(--accent-900);
 
-  /* ---- Interaction overlays ---- */
-  --overlay-hover: oklch(0 0 0 / 6%);
-  --overlay-press: oklch(0 0 0 / 18%);
-  --state-disabled-opacity: 0.4;
+	/* ---- Interaction overlays ---- */
+	--overlay-hover: oklch(0 0 0 / 6%);
+	--overlay-press: oklch(0 0 0 / 18%);
+	--state-disabled-opacity: 0.4;
 
-  --focus-ring-color: var(--border-focus);
-  --focus-ring-width: 2px;
-  --focus-ring-offset: 2px;
+	--focus-ring-color: var(--border-focus);
+	--focus-ring-width: 2px;
+	--focus-ring-offset: 2px;
 
-  /* ---- Typography ---- */
-  --font-family-base: "Pretendard Variable", "Pretendard", -apple-system,
-    BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", Roboto, "Helvetica Neue",
-    Arial, sans-serif;
-  --font-family-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas,
-    monospace;
-  --font-sans: var(--font-family-base);
-  --font-mono: var(--font-family-mono);
-  --numeric-tabular: "tabular-nums";
+	/* ---- Typography ---- */
+	--font-family-base:
+		"Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont,
+		"Segoe UI", "Noto Sans KR", Roboto, "Helvetica Neue", Arial, sans-serif;
+	--font-family-mono:
+		ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+	--font-sans: var(--font-family-base);
+	--font-mono: var(--font-family-mono);
+	--numeric-tabular: "tabular-nums";
 
-  --type-display-size: 40px;
-  --type-display-weight: 700;
-  --type-display-line-height: 1.2;
-  --type-display-tracking: -0.02em;
-  --type-h1-size: 24px;
-  --type-h1-weight: 700;
-  --type-h1-line-height: 1.35;
-  --type-h1-tracking: -0.01em;
-  --type-h2-size: 18px;
-  --type-h2-weight: 600;
-  --type-h2-line-height: 1.4;
-  --type-h2-tracking: -0.005em;
-  --type-h3-size: 16px;
-  --type-h3-weight: 600;
-  --type-h3-line-height: 1.45;
-  --type-h3-tracking: 0;
-  --type-body-size: 14px;
-  --type-body-weight: 400;
-  --type-body-line-height: 1.6;
-  --type-body-strong-size: 14px;
-  --type-body-strong-weight: 600;
-  --type-body-strong-line-height: 1.6;
-  --type-caption-size: 12px;
-  --type-caption-weight: 400;
-  --type-caption-line-height: 1.5;
-  --type-label-size: 12px;
-  --type-label-weight: 600;
-  --type-label-line-height: 1.4;
+	--type-display-size: 40px;
+	--type-display-weight: 700;
+	--type-display-line-height: 1.2;
+	--type-display-tracking: -0.02em;
+	--type-h1-size: 24px;
+	--type-h1-weight: 700;
+	--type-h1-line-height: 1.35;
+	--type-h1-tracking: -0.01em;
+	--type-h2-size: 18px;
+	--type-h2-weight: 600;
+	--type-h2-line-height: 1.4;
+	--type-h2-tracking: -0.005em;
+	--type-h3-size: 16px;
+	--type-h3-weight: 600;
+	--type-h3-line-height: 1.45;
+	--type-h3-tracking: 0;
+	--type-body-size: 14px;
+	--type-body-weight: 400;
+	--type-body-line-height: 1.6;
+	--type-body-strong-size: 14px;
+	--type-body-strong-weight: 600;
+	--type-body-strong-line-height: 1.6;
+	--type-caption-size: 12px;
+	--type-caption-weight: 400;
+	--type-caption-line-height: 1.5;
+	--type-label-size: 12px;
+	--type-label-weight: 600;
+	--type-label-line-height: 1.4;
 
-  /* ---- Spacing (4px base) ---- */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-7: 32px;
-  --space-8: 40px;
-  --space-9: 48px;
-  --space-10: 64px;
-  --space-11: 80px;
-  --space-12: 120px;
-  --gap-tight: var(--space-2);
-  --gap-default: var(--space-4);
-  --gap-loose: var(--space-6);
-  --section-gap: var(--space-9);
-  --page-padding: var(--space-9);
+	/* ---- Spacing (4px base) ---- */
+	--space-1: 4px;
+	--space-2: 8px;
+	--space-3: 12px;
+	--space-4: 16px;
+	--space-5: 20px;
+	--space-6: 24px;
+	--space-7: 32px;
+	--space-8: 40px;
+	--space-9: 48px;
+	--space-10: 64px;
+	--space-11: 80px;
+	--space-12: 120px;
+	--gap-tight: var(--space-2);
+	--gap-default: var(--space-4);
+	--gap-loose: var(--space-6);
+	--section-gap: var(--space-9);
+	--page-padding: var(--space-9);
 
-  /* ---- Radius ---- */
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-full: 999px;
+	/* ---- Radius ---- */
+	--radius-xs: 4px;
+	--radius-sm: 6px;
+	--radius-md: 8px;
+	--radius-lg: 12px;
+	--radius-xl: 16px;
+	--radius-full: 999px;
 
-  /* ---- Shadow ---- */
-  --shadow-resting: 0 1px 2px oklch(0.365 0.004 303 / 6%),
-    0 1px 1px oklch(0.365 0.004 303 / 4%);
-  --shadow-floating: 0 4px 16px oklch(0.365 0.004 303 / 8%),
-    0 1px 3px oklch(0.365 0.004 303 / 5%);
-  --shadow-modal: 0 16px 40px oklch(0.365 0.004 303 / 14%),
-    0 3px 8px oklch(0.365 0.004 303 / 8%);
+	/* ---- Shadow ---- */
+	--shadow-resting:
+		0 1px 2px oklch(0.365 0.004 303 / 6%), 0 1px 1px oklch(0.365 0.004 303 / 4%);
+	--shadow-floating:
+		0 4px 16px oklch(0.365 0.004 303 / 8%),
+		0 1px 3px oklch(0.365 0.004 303 / 5%);
+	--shadow-modal:
+		0 16px 40px oklch(0.365 0.004 303 / 14%),
+		0 3px 8px oklch(0.365 0.004 303 / 8%);
 
-  /* ---- Motion ---- */
-  --motion-duration-micro: 100ms;
-  --motion-duration-short: 200ms;
-  --motion-duration-medium: 300ms;
-  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-out: cubic-bezier(0, 0, 0.2, 1);
-  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+	/* ---- Motion ---- */
+	--motion-duration-micro: 100ms;
+	--motion-duration-short: 200ms;
+	--motion-duration-medium: 300ms;
+	--ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+	--ease-out: cubic-bezier(0, 0, 0.2, 1);
+	--ease-in: cubic-bezier(0.4, 0, 1, 1);
 }
 
-*{box-sizing:border-box}
+* {
+	box-sizing: border-box;
+}
 
 body {
-  background: var(--bg-canvas);
-  color: var(--text-primary);
-  font-family: var(--font-family-base);
+	background: var(--bg-canvas);
+	color: var(--text-primary);
+	font-family: var(--font-family-base);
 }
 
 a {
-  color: var(--text-link);
-  text-decoration-color: var(--text-link-decoration);
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 2px;
+	color: var(--text-link);
+	text-decoration-color: var(--text-link-decoration);
+	text-decoration-thickness: 1.5px;
+	text-underline-offset: 2px;
 }
 a:hover {
-  color: var(--text-primary);
-  text-decoration-color: var(--accent-800);
+	color: var(--text-primary);
+	text-decoration-color: var(--accent-800);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-    scroll-behavior: auto !important;
-  }
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.001ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.001ms !important;
+		scroll-behavior: auto !important;
+	}
 }
