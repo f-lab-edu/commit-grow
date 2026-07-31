@@ -21,6 +21,10 @@ export function setWebBootstrap(
 		type: VersioningType.URI,
 		defaultVersion: '1',
 	});
+	app.enableCors({
+		origin: environment.frontendUrl,
+		credentials: true,
+	});
 
 	app.use(
 		session({

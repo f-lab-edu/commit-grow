@@ -78,6 +78,7 @@ describe('Environment Unit Test', () => {
 function createTestEnv() {
 	return {
 		environment: 'local',
+		frontendUrl: 'http://localhost:3001',
 		server: {
 			port: 3000,
 		},

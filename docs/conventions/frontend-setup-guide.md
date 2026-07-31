@@ -102,32 +102,46 @@ frontend/
     env.exam-local.yml
 ```
 
-```ts
-// next.config.ts
-import { readFileSync } from "node:fs";
-import { load } from "js-yaml";
+- 주의: `next dev`/`next build`가 `next.config.ts` 평가 전에 `NODE_ENV`를 자체적으로 `development`/`production`으로 강제 설정 → backend식 `local`/`test`/`production` 네이밍과 이름이 충돌해서 `process.env.NODE_ENV ?? "local"` fallback은 실제로 안 걸림. `phase`로 dev/build를 구분하고, build/start는 별도 변수(`APP_ENV`)로 override
 
-const nodeEnv = process.env.NODE_ENV ?? "local";
-const config = load(readFileSync(`env/env.${nodeEnv}.yml`, "utf8")) as any;
+  ```ts
+  // next.config.ts
+  import { readFileSync } from "node:fs";
+  import { load } from "js-yaml";
+  import type { NextConfig } from "next";
+  import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
 
-export default {
-  env: {
-    NEXT_PUBLIC_API_URL: config.api.baseUrl, // 브라우저에 노출돼도 되는 값만
-  },
-};
-```
+  interface EnvConfig {
+    api: { baseUrl: string };
+  }
+
+  export default function nextConfig(phase: string): NextConfig {
+    const appEnv =
+      phase === PHASE_DEVELOPMENT_SERVER ? "local" : (process.env.APP_ENV ?? "local");
+    const config = load(readFileSync(`env/env.${appEnv}.yml`, "utf8")) as EnvConfig;
+
+    return {
+      env: {
+        NEXT_PUBLIC_API_URL: config.api.baseUrl, // 브라우저에 노출돼도 되는 값만
+      },
+    };
+  }
+  ```
 
 - Next.js는 서버 코드와 브라우저 번들이 분리되므로, `NEXT_PUBLIC_*`로 노출하는 값에 시크릿이 섞이지 않도록 주의
 - 서버 전용 값은 `env` 필드로 빼지 않고, 서버 컴포넌트/route handler 전용 유틸을 별도로 둔다
 
 ## 10단계 — CORS (backend 측 작업)
 
-```ts
-app.enableCors({
-  origin: process.env.FRONTEND_URL ?? "http://localhost:3001",
-  credentials: true,
-});
-```
+- backend는 raw `process.env` 대신 `Environment`(class-validator) 스키마로만 설정값을 읽는 컨벤션 → `frontendUrl: string` 필드를 `Environment`에 추가하고 `env/*.yml`(local/exam-local/test)에 값 채움
+- `setWebBootstrap.ts`에서 세션/passport 설정과 같은 자리에 적용:
+
+  ```ts
+  app.enableCors({
+    origin: environment.frontendUrl,
+    credentials: true,
+  });
+  ```
 
 - 세션 쿠키 기반 인증(Passport GitHub OAuth + express-session + connect-redis)이므로, 이후 `api-client.ts` 작성 시 `credentials: 'include'` 필수 — 지금은 메모만 해두고 대기
 
