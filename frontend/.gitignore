@@ -33,6 +33,10 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# environment (YAML)
+env/*
+!env/env.exam-local.yml
+
 # vercel
 .vercel
 
