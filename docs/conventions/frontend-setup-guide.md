@@ -91,45 +91,19 @@ src/
 - `node_modules`, `.next`, `.env*.local` 등 create-next-app 기본 생성분 확인
 - 루트 `.gitignore`와 중복·누락 여부 점검
 
-## 9단계 — 환경변수 (YAML)
+## 9단계 — 환경변수 (.env)
 
-backend와 동일한 컨벤션 사용 (`backend/libs/environment/src/EnviromentUtil.ts` 참고):
+backend와 다르게 YAML 컨벤션 대신 Next.js 네이티브 `.env` 로딩 사용 (커스텀 파서 유지보수 비용 문제로 변경):
 
 ```
 frontend/
-  env/
-    env.local.yml
-    env.exam-local.yml
+  .env.example   # 커밋 대상, 값 템플릿
+  .env.local     # gitignore 대상, 실제 값
 ```
 
-- 주의: `next dev`/`next build`가 `next.config.ts` 평가 전에 `NODE_ENV`를 자체적으로 `development`/`production`으로 강제 설정 → backend식 `local`/`test`/`production` 네이밍과 이름이 충돌해서 `process.env.NODE_ENV ?? "local"` fallback은 실제로 안 걸림. `phase`로 dev/build를 구분하고, build/start는 별도 변수(`APP_ENV`)로 override
-
-  ```ts
-  // next.config.ts
-  import { readFileSync } from "node:fs";
-  import { load } from "js-yaml";
-  import type { NextConfig } from "next";
-  import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
-
-  interface EnvConfig {
-    api: { baseUrl: string };
-  }
-
-  export default function nextConfig(phase: string): NextConfig {
-    const appEnv =
-      phase === PHASE_DEVELOPMENT_SERVER ? "local" : (process.env.APP_ENV ?? "local");
-    const config = load(readFileSync(`env/env.${appEnv}.yml`, "utf8")) as EnvConfig;
-
-    return {
-      env: {
-        NEXT_PUBLIC_API_URL: config.api.baseUrl, // 브라우저에 노출돼도 되는 값만
-      },
-    };
-  }
-  ```
-
+- `next.config.ts`에 커스텀 로직 불필요 — `NEXT_PUBLIC_*` 접두사 변수는 Next.js가 자동으로 브라우저 번들에 노출
 - Next.js는 서버 코드와 브라우저 번들이 분리되므로, `NEXT_PUBLIC_*`로 노출하는 값에 시크릿이 섞이지 않도록 주의
-- 서버 전용 값은 `env` 필드로 빼지 않고, 서버 컴포넌트/route handler 전용 유틸을 별도로 둔다
+- 서버 전용 값은 `NEXT_PUBLIC_` 없이 두고, 서버 컴포넌트/route handler에서만 참조
 
 ## 10단계 — CORS (backend 측 작업)
 
@@ -170,18 +144,6 @@ export const metadata: Metadata = {
 };
 ```
 
-## 13단계 — CI
-
-- `.github/workflows/frontend-ci.yml` 추가: `paths: frontend/**` 필터로 install → biome lint → `tsc --noEmit` → `next build` 순서로 실행
-- SonarCloud exclusion 설정(`sonar.exclusions` 등)은 보류 — 추후 확인 후 결정
-
-## 14단계 — 커밋
-
-```
-git add .
-git commit -m "chore: frontend 기초 세팅 (Next.js + Tailwind + shadcn + Biome)"
-```
-
 ## 이번 범위 제외 (작업 시 별도 논의)
 
 - GitHub OAuth 로그인 연동 (프론트 리다이렉트 처리)
@@ -191,3 +153,4 @@ git commit -m "chore: frontend 기초 세팅 (Next.js + Tailwind + shadcn + Biom
 - husky + lint-staged (추후 추가 예정)
 - SonarCloud exclusion 세부값
 - frontend Docker Compose 편입 (로컬 개발엔 불필요 — backend는 DB/Redis 의존성 때문에 필요했던 것)
+- CI
