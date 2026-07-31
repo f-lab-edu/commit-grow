@@ -1,4 +1,3 @@
 {
-	"git.ignoreLimitWarning": true,
-	"biome.lspBin": "./frontend/node_modules/.bin/biome"
+	"git.ignoreLimitWarning": true
 }
