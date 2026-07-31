@@ -2,6 +2,8 @@
    Upgrade path: swap for next/font/local + vendored woff2 if licensed static files land. */
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css");
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 /* Design tokens — Commit Grow Design System (Claude Design, synced via DesignSync MCP) */
 @theme {
@@ -204,5 +206,57 @@ a:hover {
 		animation-iteration-count: 1 !important;
 		transition-duration: 0.001ms !important;
 		scroll-behavior: auto !important;
+	}
+}
+
+/* shadcn/ui 컴포넌트가 참조하는 시맨틱 슬롯 — 값은 전부 위 디자인 토큰에 매핑 (shadcn 기본 회색 팔레트 대신) */
+@theme inline {
+	--color-ring: var(--ring);
+	--color-input: var(--input);
+	--color-border: var(--border);
+	--color-destructive: var(--destructive);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-accent: var(--accent);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-muted: var(--muted);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-secondary: var(--secondary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-primary: var(--primary);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-popover: var(--popover);
+	--color-card-foreground: var(--card-foreground);
+	--color-card: var(--card);
+	--color-foreground: var(--foreground);
+	--color-background: var(--background);
+}
+
+:root {
+	--background: var(--bg-canvas);
+	--foreground: var(--text-primary);
+	--card: var(--bg-surface);
+	--card-foreground: var(--text-primary);
+	--popover: var(--bg-surface-alt);
+	--popover-foreground: var(--text-primary);
+	--primary: var(--accent-500);
+	--primary-foreground: var(--text-on-accent);
+	--secondary: var(--bg-surface-hover);
+	--secondary-foreground: var(--text-primary);
+	--muted: var(--bg-surface-alt);
+	--muted-foreground: var(--text-tertiary);
+	--accent: var(--bg-surface-hover);
+	--accent-foreground: var(--text-primary);
+	--destructive: var(--negative-500);
+	--border: var(--border-default);
+	--input: var(--border-default);
+	--ring: var(--border-focus);
+}
+
+@layer base {
+	* {
+		@apply border-border outline-ring/50;
+	}
+	html {
+		@apply font-sans;
 	}
 }
