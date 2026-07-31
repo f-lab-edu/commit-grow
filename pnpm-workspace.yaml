@@ -1,6 +1,9 @@
 packages:
   - "frontend"
   - "backend"
+catalog:
+  "@biomejs/biome": 2.5.1
+  typescript: ^5.7.3
 allowBuilds:
   '@scarf/scarf': true
   '@swc/core': true

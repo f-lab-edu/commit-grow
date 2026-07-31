@@ -58,7 +58,7 @@
 		"rxjs": "^7.8.1"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.5.1",
+		"@biomejs/biome": "catalog:",
 		"@mikro-orm/cli": "^7.1.5",
 		"@nestjs/cli": "^11.0.0",
 		"@nestjs/schematics": "^11.0.0",
@@ -77,7 +77,7 @@
 		"ts-loader": "^9.5.2",
 		"tsconfig-paths": "^4.2.0",
 		"tsx": "^4.22.4",
-		"typescript": "^5.7.3",
+		"typescript": "catalog:",
 		"unplugin-swc": "^1.5.1",
 		"vite-tsconfig-paths": "^5.1.4",
 		"vitest": "^3.0.0"
