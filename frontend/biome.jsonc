@@ -1,0 +1,298 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.5.1/schema.json",
+	"root": false,
+	"extends": "//",
+	// Git 연동 — 변경 파일 우선 처리, .gitignore 규칙 반영
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	// Biome 처리 대상
+	"files": {
+		"includes": [
+			"**",
+			"!!**/.next",
+			"!!**/out",
+			"!!**/build",
+			"!!**/node_modules"
+		]
+	},
+	// 코드 포맷터 — 루트와 동일하게 탭 들여쓰기
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab"
+	},
+	// Tailwind v4 CSS-first 문법(@theme 등) 파싱 허용
+	"css": {
+		"parser": {
+			"tailwindDirectives": true
+		}
+	},
+	// 린터 — eslint-config-next(core-web-vitals + typescript) 마이그레이션 결과
+	// (biome migrate eslint --write --include-inspired)
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"preset": "none",
+			"complexity": {
+				"noBannedTypes": "error",
+				"noUselessThisAlias": "error",
+				"noUselessTypeConstraint": "error"
+			},
+			"correctness": {
+				"noBeforeInteractiveScriptOutsideDocument": "warn",
+				"noNextAsyncClientComponent": "warn",
+				"noUnusedVariables": "error",
+				"useInlineScriptId": "error"
+			},
+			"performance": {
+				"noImgElement": "warn",
+				"noSyncScripts": "error",
+				"noUnwantedPolyfillio": "warn",
+				"useGoogleFontPreconnect": "warn"
+			},
+			"style": {
+				"noCommonJs": "error",
+				"noHeadElement": "warn",
+				"noNamespace": "error",
+				"useArrayLiterals": "error",
+				"useAsConstAssertion": "error"
+			},
+			"suspicious": {
+				"noDocumentImportInPage": "error",
+				"noDuplicateEnumValues": "error",
+				"noExplicitAny": "error",
+				"noExtraNonNullAssertion": "error",
+				"noHeadImportInDocument": "error",
+				"noMisleadingInstantiator": "error",
+				"noNonNullAssertedOptionalChain": "error",
+				"noTsIgnore": "error",
+				"noUnsafeDeclarationMerging": "error",
+				"noUnusedExpressions": "off",
+				"useGoogleFontDisplay": "warn",
+				"useNamespaceKeyword": "error"
+			}
+		},
+		"includes": ["**", "!.next/**", "!out/**", "!build/**", "!next-env.d.ts"]
+	},
+	// 파일 패턴별 설정 덮어쓰기 (ESLint 마이그레이션 결과)
+	"overrides": [
+		{
+			// JSX/TSX — 브라우저 DOM 이벤트 핸들러 전역, react/react-hooks/jsx-a11y/next 규칙
+			"includes": ["**/*.{js,jsx,mjs,ts,tsx,mts,cts}"],
+			"javascript": {
+				"globals": [
+					"onanimationend",
+					"exports",
+					"ongamepadconnected",
+					"onlostpointercapture",
+					"onanimationiteration",
+					"onkeyup",
+					"onmousedown",
+					"onanimationstart",
+					"onslotchange",
+					"onprogress",
+					"ontransitionstart",
+					"onpause",
+					"onended",
+					"onpointerover",
+					"onscrollend",
+					"onformdata",
+					"ontransitionrun",
+					"onanimationcancel",
+					"ondrag",
+					"onchange",
+					"onbeforeinstallprompt",
+					"onbeforexrselect",
+					"onmessage",
+					"ontransitioncancel",
+					"onpointerdown",
+					"onabort",
+					"onpointerout",
+					"oncuechange",
+					"ongotpointercapture",
+					"onscrollsnapchanging",
+					"onsearch",
+					"onsubmit",
+					"onstalled",
+					"onsuspend",
+					"onreset",
+					"onerror",
+					"onmouseenter",
+					"ongamepaddisconnected",
+					"onresize",
+					"ondragover",
+					"onbeforetoggle",
+					"onmouseover",
+					"onpagehide",
+					"onmousemove",
+					"onratechange",
+					"oncommand",
+					"onmessageerror",
+					"onwheel",
+					"ondevicemotion",
+					"onauxclick",
+					"ontransitionend",
+					"onpaste",
+					"onpageswap",
+					"ononline",
+					"ondeviceorientationabsolute",
+					"onkeydown",
+					"onclose",
+					"onselect",
+					"onpageshow",
+					"onpointercancel",
+					"onbeforematch",
+					"onpointerrawupdate",
+					"ondragleave",
+					"onscrollsnapchange",
+					"onseeked",
+					"onwaiting",
+					"onbeforeunload",
+					"onplaying",
+					"onvolumechange",
+					"ondragend",
+					"onstorage",
+					"onloadeddata",
+					"onfocus",
+					"onoffline",
+					"onplay",
+					"onafterprint",
+					"onclick",
+					"oncut",
+					"onmouseout",
+					"ondblclick",
+					"oncanplay",
+					"onloadstart",
+					"onappinstalled",
+					"onpointermove",
+					"ontoggle",
+					"oncontextmenu",
+					"onblur",
+					"oncancel",
+					"onbeforeprint",
+					"oncontextrestored",
+					"onloadedmetadata",
+					"onpointerup",
+					"onlanguagechange",
+					"oncopy",
+					"onselectstart",
+					"onscroll",
+					"onload",
+					"ondragstart",
+					"onbeforeinput",
+					"oncanplaythrough",
+					"oninput",
+					"oninvalid",
+					"ontimeupdate",
+					"ondurationchange",
+					"onselectionchange",
+					"onmouseup",
+					"location",
+					"onkeypress",
+					"onpointerleave",
+					"oncontextlost",
+					"ondrop",
+					"onsecuritypolicyviolation",
+					"oncontentvisibilityautostatechange",
+					"ondeviceorientation",
+					"onseeking",
+					"onrejectionhandled",
+					"onunload",
+					"onmouseleave",
+					"onhashchange",
+					"onpointerenter",
+					"onmousewheel",
+					"onunhandledrejection",
+					"ondragenter",
+					"onpopstate",
+					"onpagereveal",
+					"onemptied"
+				]
+			},
+			"linter": {
+				"rules": {
+					"a11y": {
+						"noAriaUnsupportedElements": "warn",
+						"useAltText": "warn",
+						"useAriaPropsForRole": "warn",
+						"useAriaPropsSupportedByRole": "warn",
+						"useValidAriaProps": "warn",
+						"useValidAriaValues": "warn"
+					},
+					"correctness": {
+						"noBeforeInteractiveScriptOutsideDocument": "warn",
+						"noChildrenProp": "error",
+						"noNextAsyncClientComponent": "warn",
+						"useExhaustiveDependencies": "warn",
+						"useHookAtTopLevel": "error",
+						"useInlineScriptId": "error",
+						"useJsxKeyInIterable": "error"
+					},
+					"performance": {
+						"noImgElement": "warn",
+						"noSyncScripts": "warn",
+						"noUnwantedPolyfillio": "warn",
+						"useGoogleFontPreconnect": "warn"
+					},
+					"security": {
+						"noBlankTarget": "off",
+						"noDangerouslySetInnerHtmlWithChildren": "error"
+					},
+					"style": { "noHeadElement": "warn" },
+					"suspicious": {
+						"noCommentText": "error",
+						"noDocumentImportInPage": "error",
+						"noDuplicateJsxProps": "error",
+						"noHeadImportInDocument": "error",
+						"noUnknownAttribute": "off",
+						"useGoogleFontDisplay": "warn"
+					}
+				}
+			}
+		},
+		{
+			// TypeScript — 컴파일러가 검사하는 항목은 끄고, TS 전용 규칙만 추가
+			"includes": ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
+			"linter": {
+				"rules": {
+					"complexity": { "noArguments": "error" },
+					"correctness": {
+						"noConstAssign": "off",
+						"noGlobalObjectCalls": "off",
+						"noInvalidBuiltinInstantiation": "off",
+						"noInvalidConstructorSuper": "off",
+						"noSetterReturn": "off",
+						"noUndeclaredVariables": "off",
+						"noUnreachable": "off",
+						"noUnreachableSuper": "off"
+					},
+					"style": { "useConst": "error", "useSpreadOverApply": "error" },
+					"suspicious": {
+						"noClassAssign": "off",
+						"noDuplicateClassMembers": "off",
+						"noDuplicateObjectKeys": "off",
+						"noDuplicateParameters": "off",
+						"noFunctionAssign": "off",
+						"noImportAssign": "off",
+						"noRedeclare": "off",
+						"noUnsafeNegation": "off",
+						"noVar": "error",
+						"noWith": "off",
+						"useGetterReturn": "off"
+					}
+				}
+			}
+		}
+	],
+	// 에디터 보조 액션 — 저장 시 import 정렬 등 (루트와 동일)
+	"assist": {
+		"enabled": true,
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
+	}
+}

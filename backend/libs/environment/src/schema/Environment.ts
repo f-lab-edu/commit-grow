@@ -11,6 +11,10 @@ export class Environment {
 	@IsNotEmpty()
 	environment: string;
 
+	@IsString()
+	@IsNotEmpty()
+	public readonly frontendUrl: string;
+
 	@ValidateNested()
 	@IsNotEmpty()
 	@Type(() => ServerEnvironment)
