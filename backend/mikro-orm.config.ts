@@ -16,6 +16,10 @@ const mikroOrmConfig = defineConfig({
 		path: './script/migration',
 	},
 
+	schemaGenerator: {
+		disableForeignKeys: true,
+	},
+
 	pool: {
 		min: 10, // 최소 유지 커넥션 수. 0으로 두면 요청마다 새로 만들어 콜드스타트 지연 발생
 		max: 20, // 최대 커넥션 수. DB의 max_connections를 인스턴스 개수로 나눈 값 이하로 설정할 것

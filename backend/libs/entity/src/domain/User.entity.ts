@@ -1,5 +1,11 @@
-import { Entity, Index, Property } from '@mikro-orm/decorators/legacy';
+import {
+	Entity,
+	Index,
+	OneToMany,
+	Property,
+} from '@mikro-orm/decorators/legacy';
 import { BaseTimeEntity } from '../base/BaseTime.entity';
+import { Retrospect } from './Retrospect.entity';
 
 @Entity({ tableName: 'users' })
 @Index({
@@ -16,6 +22,13 @@ export class User extends BaseTimeEntity {
 
 	@Property({ type: 'varchar', length: 255 })
 	githubId: string;
+
+	@OneToMany(
+		() => Retrospect,
+		(retrospect) => retrospect.user,
+		{ lazy: true },
+	)
+	retrospects: Retrospect[];
 
 	private constructor(username: string, email: string, githubId: string) {
 		super();
