@@ -2,11 +2,13 @@ import {
 	Entity,
 	Enum,
 	ManyToOne,
+	OneToMany,
 	Property,
 	Unique,
 } from '@mikro-orm/decorators/legacy';
 import { BaseTimeEntity } from '../base/BaseTime.entity';
 import { RetrospectSummaryStatus } from '../enums/RetrospectSummaryStatus.enum';
+import { GitActivity } from './GitActivity.entity';
 import { User } from './User.entity';
 
 @Entity({ tableName: 'retrospects' })
@@ -15,7 +17,7 @@ import { User } from './User.entity';
 	name: 'idx_retrospect_user_date',
 })
 export class Retrospect extends BaseTimeEntity {
-	@Property({ type: 'date' })
+	@Property({ type: 'date', comment: '회고 대상 일자' })
 	retrospectDate: string;
 
 	@Enum({
@@ -24,16 +26,25 @@ export class Retrospect extends BaseTimeEntity {
 	})
 	summaryStatus: RetrospectSummaryStatus;
 
-	@Property({ type: 'varchar', length: 100, nullable: true })
+	@Property({
+		type: 'varchar',
+		length: 100,
+		nullable: true,
+		comment: 'AI 생성 제목 (분석 완료 시, FT-08)',
+	})
 	title?: string;
 
-	@Property({ type: 'text', nullable: true })
+	@Property({ type: 'text', nullable: true, comment: 'AI 요약 (분석 완료 시)' })
 	summaryText?: string;
 
-	@Property({ type: 'text', nullable: true })
+	@Property({
+		type: 'text',
+		nullable: true,
+		comment: 'AI 인사이트 (분석 완료 시)',
+	})
 	insightText?: string;
 
-	@Property({ type: 'datetime', nullable: true })
+	@Property({ type: 'datetime', nullable: true, comment: '분석 완료 시각' })
 	analyzedAt?: Date;
 
 	@ManyToOne(() => User, {
@@ -41,6 +52,12 @@ export class Retrospect extends BaseTimeEntity {
 		fieldName: 'user_id',
 	})
 	user: User;
+
+	@OneToMany(
+		() => GitActivity,
+		(gitActivity) => gitActivity.retrospect,
+	)
+	gitActivities: GitActivity[];
 
 	private constructor(user: User, retrospectDate: string) {
 		super();
