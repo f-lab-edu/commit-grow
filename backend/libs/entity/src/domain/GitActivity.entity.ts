@@ -10,7 +10,6 @@ export class GitActivity extends BaseTimeEntity {
 	@Property({
 		type: 'varchar',
 		length: 255,
-		fieldName: 'git_id',
 		unique: true,
 		comment: 'git 기준 id',
 	})
