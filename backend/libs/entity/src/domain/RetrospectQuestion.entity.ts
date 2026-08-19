@@ -13,9 +13,6 @@ export class RetrospectQuestion extends BaseTimeEntity {
 	@Property({ type: 'int', comment: '질문 순서 (1~3)' })
 	order: number;
 
-	@Property({ type: 'uuid', fieldName: 'retrospect_id', comment: '회고 ID' })
-	retrospectId: string;
-
 	@ManyToOne(() => Retrospect, {
 		nullable: false,
 		fieldName: 'retrospect_id',

@@ -31,16 +31,6 @@ export class GitActivity extends BaseTimeEntity {
 	@Property({ type: 'datetime', comment: '활동 시간' })
 	activityAt: Date;
 
-	@Property({ type: 'uuid', fieldName: 'user_id', comment: '소유자 ID' })
-	userId: string;
-
-	@Property({
-		type: 'uuid',
-		fieldName: 'retrospect_id',
-		comment: '회고 ID',
-	})
-	retrospectId: string;
-
 	@ManyToOne(() => User, {
 		nullable: false,
 		fieldName: 'user_id',
