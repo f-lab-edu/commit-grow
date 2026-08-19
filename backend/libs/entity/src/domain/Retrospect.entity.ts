@@ -65,7 +65,6 @@ export class Retrospect extends BaseTimeEntity {
 		super();
 		this.user = user;
 		this.retrospectDate = retrospectDate;
-		this.summaryStatus = RetrospectSummaryStatusEnum.ANALYZING;
 	}
 
 	static create(user: User, retrospectDate: string) {

@@ -34,12 +34,14 @@ export class GitActivity extends BaseTimeEntity {
 	@ManyToOne(() => User, {
 		nullable: false,
 		fieldName: 'user_id',
+		lazy: true,
 	})
 	user: User;
 
 	@ManyToOne(() => Retrospect, {
 		nullable: false,
 		fieldName: 'retrospect_id',
+		lazy: true,
 	})
 	retrospect: Retrospect;
 }
