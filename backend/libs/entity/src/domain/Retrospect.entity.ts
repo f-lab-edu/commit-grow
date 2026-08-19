@@ -58,6 +58,7 @@ export class Retrospect extends BaseTimeEntity {
 	@OneToMany(
 		() => GitActivity,
 		(gitActivity) => gitActivity.retrospect,
+		{ lazy: true },
 	)
 	gitActivities: GitActivity[];
 
