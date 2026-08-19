@@ -1,13 +1,13 @@
 import {
 	Entity,
-	Enum,
 	ManyToOne,
 	OneToMany,
 	Property,
 	Unique,
 } from '@mikro-orm/decorators/legacy';
 import { BaseTimeEntity } from '../base/BaseTime.entity';
-import { RetrospectSummaryStatus } from '../enums/RetrospectSummaryStatus.enum';
+import { createCustomType } from '../base/createCustomType';
+import { RetrospectSummaryStatusEnum } from '../enums/RetrospectSummaryStatusEnum';
 import { GitActivity } from './GitActivity.entity';
 import { User } from './User.entity';
 
@@ -20,11 +20,13 @@ export class Retrospect extends BaseTimeEntity {
 	@Property({ type: 'date', comment: '회고 대상 일자' })
 	retrospectDate: string;
 
-	@Enum({
-		items: () => RetrospectSummaryStatus,
-		default: RetrospectSummaryStatus.ANALYZING,
+	@Property({
+		type: createCustomType(RetrospectSummaryStatusEnum),
+		nullable: true,
+		comment:
+			'회고 요약 상태 (ANALYZING: 분석중, COMPLETED: 분석완료, FAILED: 분석실패)',
 	})
-	summaryStatus: RetrospectSummaryStatus;
+	summaryStatus?: RetrospectSummaryStatusEnum;
 
 	@Property({
 		type: 'varchar',
@@ -63,7 +65,7 @@ export class Retrospect extends BaseTimeEntity {
 		super();
 		this.user = user;
 		this.retrospectDate = retrospectDate;
-		this.summaryStatus = RetrospectSummaryStatus.ANALYZING;
+		this.summaryStatus = RetrospectSummaryStatusEnum.ANALYZING;
 	}
 
 	static create(user: User, retrospectDate: string) {

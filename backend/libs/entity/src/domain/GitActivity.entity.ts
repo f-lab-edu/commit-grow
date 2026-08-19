@@ -1,13 +1,9 @@
 import { Entity, ManyToOne, Property } from '@mikro-orm/decorators/legacy';
 import { BaseTimeEntity } from '../base/BaseTime.entity';
+import { createCustomType } from '../base/createCustomType';
+import { GitActivityTypeEnum } from '../enums/GitActivityTypeEnum';
 import { Retrospect } from './Retrospect.entity';
 import { User } from './User.entity';
-
-export type GitActivityType =
-	| 'COMMIT'
-	| 'ISSUE'
-	| 'PULL_REQUEST'
-	| 'CODE_REVIEW';
 
 @Entity({ tableName: 'git_activities' })
 export class GitActivity extends BaseTimeEntity {
@@ -24,11 +20,10 @@ export class GitActivity extends BaseTimeEntity {
 	summary: string;
 
 	@Property({
-		type: 'varchar',
-		length: 20,
-		comment: '활동 타입 PR, Commit, Issue, CodeReview 등등',
+		type: createCustomType(GitActivityTypeEnum),
+		comment: '활동 타입 PR, COMMIT, ISSUE, CODE_REVIEW 등등',
 	})
-	type: GitActivityType;
+	type: GitActivityTypeEnum;
 
 	@Property({ type: 'varchar', length: 255, comment: '레포명' })
 	repoName: string;
