@@ -44,6 +44,16 @@
 	--negative-500: oklch(0.58 0.16 25);
 	--negative-600: oklch(0.5 0.16 25);
 
+	/* ---- Git 활동 카드 태그색 (S-05 전용) — negative 램프와 동일한 명도·채도, 유형별 hue만 다름 ---- */
+	--gitact-commit-100: oklch(0.94 0.035 156);
+	--gitact-commit-600: oklch(0.5 0.16 156);
+	--gitact-issue-100: oklch(0.94 0.035 70);
+	--gitact-issue-600: oklch(0.5 0.16 70);
+	--gitact-pr-100: oklch(0.94 0.035 250);
+	--gitact-pr-600: oklch(0.5 0.16 250);
+	--gitact-review-100: oklch(0.94 0.035 310);
+	--gitact-review-600: oklch(0.5 0.16 310);
+
 	/* ---- Semantic — backgrounds ---- */
 	--bg-canvas: var(--neutral-0);
 	--bg-surface: var(--neutral-50);
