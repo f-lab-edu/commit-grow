@@ -32,12 +32,12 @@ function ActivityGroupCard({ group }: { group: GitActivityGroup }) {
 
 	return (
 		<div
-			className="flex flex-col gap-3 rounded-[var(--radius-lg)] border border-[color:var(--border-subtle)] p-3.5"
+			className="flex flex-col gap-3 rounded-lg border border-(--border-subtle) p-3.5"
 			style={{ background: TYPE_TINT[group.type] }}
 		>
 			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-2">
-					<div className="flex size-[30px] flex-none items-center justify-center rounded-[var(--radius-md)] bg-background">
+					<div className="flex size-7.5 flex-none items-center justify-center rounded-md">
 						<TypeIcon
 							className="size-3.5"
 							style={{ color: TYPE_ACCENT[group.type] }}
@@ -54,7 +54,6 @@ function ActivityGroupCard({ group }: { group: GitActivityGroup }) {
 					{group.count}
 				</span>
 			</div>
-
 			{group.items.length === 0 ? (
 				<div className="flex flex-1 items-center justify-center py-2 text-center">
 					<span className="text-muted-foreground text-xs">
@@ -66,7 +65,7 @@ function ActivityGroupCard({ group }: { group: GitActivityGroup }) {
 					{group.items.map((item) => (
 						<div
 							key={item.title}
-							className="flex flex-col gap-1.5 rounded-[var(--radius-md)] border border-[color:var(--border-subtle)] bg-background p-2.5"
+							className="flex flex-col gap-1.5 rounded-md border border-(--border-subtle) bg-background p-2.5"
 						>
 							<span className="font-semibold text-[12.5px] leading-snug">
 								{item.title}
@@ -85,7 +84,6 @@ function ActivityGroupCard({ group }: { group: GitActivityGroup }) {
 					))}
 				</div>
 			)}
-
 			{group.moreCount > 0 && (
 				<span className="text-muted-foreground text-xs">
 					+{group.moreCount}개 더 있어요
