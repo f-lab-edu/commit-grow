@@ -67,6 +67,7 @@
 	--bg-inverse: var(--neutral-900);
 	--bg-negative-muted: var(--negative-100);
 	--bg-negative-solid: var(--negative-500);
+	--bg-icon: var(--neutral-0);
 
 	/* ---- Semantic — text ---- */
 	--text-primary: var(--neutral-900);

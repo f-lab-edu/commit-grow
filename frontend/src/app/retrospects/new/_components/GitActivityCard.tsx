@@ -37,7 +37,7 @@ function ActivityGroupCard({ group }: { group: GitActivityGroup }) {
 		>
 			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-2">
-					<div className="flex size-7.5 flex-none items-center justify-center rounded-md">
+					<div className="bg-(--bg-icon) flex size-7.5 flex-none items-center justify-center rounded-md">
 						<TypeIcon
 							className="size-3.5"
 							style={{ color: TYPE_ACCENT[group.type] }}
@@ -95,22 +95,20 @@ function ActivityGroupCard({ group }: { group: GitActivityGroup }) {
 
 export function GitActivityCard({ groups }: { groups: GitActivityGroup[] }) {
 	return (
-		<Card>
-			<div className="flex flex-col gap-3">
-				<div className="flex items-center justify-between">
-					<div className="flex items-center gap-2">
-						<GitBranchIcon className="size-[15px] text-muted-foreground" />
-						<span className="font-semibold text-[15px]">오늘의 Git 활동</span>
-					</div>
-					<span className="text-muted-foreground text-xs">
-						조회 전용 참고 자료
-					</span>
+		<Card className="flex flex-col gap-3 p-6">
+			<div className="flex items-center justify-between">
+				<div className="flex items-center gap-2">
+					<GitBranchIcon className="size-[15px] text-muted-foreground" />
+					<span className="font-semibold text-[15px]">오늘의 Git 활동</span>
 				</div>
-				<div className="grid grid-cols-4 items-stretch gap-3">
-					{groups.map((group) => (
-						<ActivityGroupCard key={group.type} group={group} />
-					))}
-				</div>
+				<span className="text-muted-foreground text-xs">
+					조회 전용 참고 자료
+				</span>
+			</div>
+			<div className="grid grid-cols-4 items-stretch gap-3">
+				{groups.map((group) => (
+					<ActivityGroupCard key={group.type} group={group} />
+				))}
 			</div>
 		</Card>
 	);
