@@ -22,7 +22,7 @@ export function QuestionCard({
 	const answered = answer.trim() !== "";
 
 	return (
-		<Card className="relative overflow-visible">
+		<Card className="relative overflow-visible p-6">
 			<span
 				className={cn(
 					"-top-3.5 -left-3.5 absolute flex size-6.5 items-center justify-center rounded-[var(--radius-md)] font-bold text-xs shadow-[var(--shadow-resting)]",
