@@ -95,7 +95,7 @@ export function ActivityQuestionStep({ scenario }: { scenario: MockScenario }) {
 					: "오늘은 확인할 Git 활동이 없어요. 기본 질문 하나에만 답하면 다음으로 넘어가요";
 
 	return (
-		<div className="flex flex-1 flex-col gap-4.5 overflow-hidden p-8 pt-8">
+		<div className="flex flex-1 flex-col gap-4.5 p-8 pt-8">
 			<div className="flex flex-col gap-1.5">
 				<h1 className="font-bold text-2xl tracking-tight">
 					오늘 활동을 확인하고, 질문에 답해볼까요?
@@ -143,7 +143,7 @@ export function ActivityQuestionStep({ scenario }: { scenario: MockScenario }) {
 						<GitActivityCard groups={data.activity} />
 					)}
 
-					<div className="flex flex-col gap-3.5 overflow-y-auto pt-4">
+					<div className="flex flex-col gap-3.5">
 						<div className="flex items-baseline justify-between">
 							<span className="font-semibold text-xl">질문에 답해주세요</span>
 							<span className="text-muted-foreground text-xs">
