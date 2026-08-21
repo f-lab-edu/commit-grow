@@ -1,8 +1,17 @@
-import { Entity, ManyToOne, Property } from '@mikro-orm/decorators/legacy';
+import {
+	Entity,
+	ManyToOne,
+	Property,
+	Unique,
+} from '@mikro-orm/decorators/legacy';
 import { BaseTimeEntity } from '../base/BaseTime.entity';
 import { Retrospect } from './Retrospect.entity';
 
 @Entity({ tableName: 'retrospect_questions' })
+@Unique({
+	name: 'uk_retrospect_question_sort_order',
+	properties: ['sortOrder', 'retrospect'],
+})
 export class RetrospectQuestion extends BaseTimeEntity {
 	@Property({ type: 'text', comment: 'AI가 생성한 질문' })
 	questionText: string;
@@ -11,7 +20,7 @@ export class RetrospectQuestion extends BaseTimeEntity {
 	answerText: string;
 
 	@Property({ type: 'int', comment: '질문 순서 (1~3)' })
-	order: number;
+	sortOrder: number;
 
 	@ManyToOne(() => Retrospect, {
 		nullable: false,
