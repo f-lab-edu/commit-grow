@@ -23,7 +23,7 @@ export class Retrospect extends BaseTimeEntity {
 	@Property({
 		type: createCustomType(RetrospectSummaryStatusEnum),
 		comment:
-			'회고 요약 상태 (ANALYZING: 분석중, COMPLETED: 분석완료, FAILED: 분석실패)',
+			'회고 요약 상태 (DRAFT: 사용자가 작성중, ANALYZING: 분석중, COMPLETED: 분석완료, FAILED: 분석실패)',
 	})
 	summaryStatus: RetrospectSummaryStatusEnum;
 
