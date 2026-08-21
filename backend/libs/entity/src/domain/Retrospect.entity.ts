@@ -31,20 +31,18 @@ export class Retrospect extends BaseTimeEntity {
 	@Property({
 		type: 'varchar',
 		length: 100,
-		nullable: true,
 		comment: 'AI 생성 제목 (분석 완료 시, FT-08)',
 	})
-	title?: string;
+	title: string;
 
-	@Property({ type: 'text', nullable: true, comment: 'AI 요약 (분석 완료 시)' })
-	summaryText?: string;
+	@Property({ type: 'text', comment: 'AI 요약 (분석 완료 시)' })
+	summaryText: string;
 
 	@Property({
 		type: 'text',
-		nullable: true,
 		comment: 'AI 인사이트 (분석 완료 시)',
 	})
-	insightText?: string;
+	insightText: string;
 
 	@Property({ type: 'datetime', nullable: true, comment: '분석 완료 시각' })
 	analyzedAt?: Date;
@@ -66,9 +64,5 @@ export class Retrospect extends BaseTimeEntity {
 		super();
 		this.user = user;
 		this.retrospectDate = retrospectDate;
-	}
-
-	static create(user: User, retrospectDate: string) {
-		return new Retrospect(user, retrospectDate);
 	}
 }
