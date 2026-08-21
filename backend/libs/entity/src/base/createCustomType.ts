@@ -15,5 +15,11 @@ export function createCustomType<T extends BaseEnum<T>>(
 		getColumnType(): string {
 			return `varchar(${columnLength})`;
 		}
+		compareAsType() {
+			return 'string';
+		}
+		ensureComparable(): boolean {
+			return false;
+		}
 	};
 }

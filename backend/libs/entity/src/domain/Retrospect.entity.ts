@@ -22,11 +22,10 @@ export class Retrospect extends BaseTimeEntity {
 
 	@Property({
 		type: createCustomType(RetrospectSummaryStatusEnum),
-		nullable: true,
 		comment:
 			'회고 요약 상태 (ANALYZING: 분석중, COMPLETED: 분석완료, FAILED: 분석실패)',
 	})
-	summaryStatus?: RetrospectSummaryStatusEnum;
+	summaryStatus: RetrospectSummaryStatusEnum;
 
 	@Property({
 		type: 'varchar',
@@ -64,5 +63,6 @@ export class Retrospect extends BaseTimeEntity {
 		super();
 		this.user = user;
 		this.retrospectDate = retrospectDate;
+		this.summaryStatus = RetrospectSummaryStatusEnum.DRAFT;
 	}
 }

@@ -1,6 +1,7 @@
 import { BaseEnum } from './BaseEnum';
 
 export class RetrospectSummaryStatusEnum extends BaseEnum<RetrospectSummaryStatusEnum> {
+	static readonly DRAFT = new RetrospectSummaryStatusEnum('DRAFT', '작성중');
 	static readonly ANALYZING = new RetrospectSummaryStatusEnum(
 		'ANALYZING',
 		'분석중',
