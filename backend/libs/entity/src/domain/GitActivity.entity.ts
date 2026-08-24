@@ -31,13 +31,11 @@ export class GitActivity extends BaseTimeEntity {
 	activityAt: Date;
 
 	@ManyToOne(() => User, {
-		nullable: false,
 		fieldName: 'user_id',
 	})
 	user: User;
 
 	@ManyToOne(() => Retrospect, {
-		nullable: false,
 		fieldName: 'retrospect_id',
 	})
 	retrospect: Retrospect;

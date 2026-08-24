@@ -48,7 +48,6 @@ export class Retrospect extends BaseTimeEntity {
 	analyzedAt?: Date;
 
 	@ManyToOne(() => User, {
-		nullable: false,
 		fieldName: 'user_id',
 	})
 	user: User;

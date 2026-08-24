@@ -23,7 +23,6 @@ export class RetrospectQuestion extends BaseTimeEntity {
 	questionOrder: number;
 
 	@ManyToOne(() => Retrospect, {
-		nullable: false,
 		fieldName: 'retrospect_id',
 	})
 	retrospect: Retrospect;
