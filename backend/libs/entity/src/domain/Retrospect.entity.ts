@@ -18,30 +18,31 @@ import { User } from './User.entity';
 })
 export class Retrospect extends BaseTimeEntity {
 	@Property({ type: 'date', comment: '회고 대상 일자' })
-	retrospectDate: string;
+	retrospectDate: Date;
 
 	@Property({
 		type: createCustomType(RetrospectSummaryStatusEnum),
 		comment:
 			'회고 요약 상태 (DRAFT: 사용자가 작성중, ANALYZING: 분석중, COMPLETED: 분석완료, FAILED: 분석실패)',
 	})
-	summaryStatus: RetrospectSummaryStatusEnum;
+	summaryStatus: RetrospectSummaryStatusEnum =
+		RetrospectSummaryStatusEnum.DRAFT;
 
 	@Property({
 		type: 'varchar',
 		length: 100,
 		comment: 'AI 생성 제목 (분석 완료 시, FT-08)',
 	})
-	title: string;
+	title: string = '';
 
 	@Property({ type: 'text', comment: 'AI 요약 (분석 완료 시)' })
-	summaryText: string;
+	summaryText: string = '';
 
 	@Property({
 		type: 'text',
 		comment: 'AI 인사이트 (분석 완료 시)',
 	})
-	insightText: string;
+	insightText: string = '';
 
 	@Property({ type: 'datetime', nullable: true, comment: '분석 완료 시각' })
 	analyzedAt?: Date;
@@ -59,10 +60,9 @@ export class Retrospect extends BaseTimeEntity {
 	)
 	gitActivities: GitActivity[];
 
-	private constructor(user: User, retrospectDate: string) {
+	private constructor(user: User, retrospectDate: Date) {
 		super();
 		this.user = user;
 		this.retrospectDate = retrospectDate;
-		this.summaryStatus = RetrospectSummaryStatusEnum.DRAFT;
 	}
 }

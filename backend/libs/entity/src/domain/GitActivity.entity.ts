@@ -16,7 +16,7 @@ export class GitActivity extends BaseTimeEntity {
 	gitId: string;
 
 	@Property({ type: 'varchar', length: 255, comment: '활동 요약' })
-	summary: string;
+	summary: string = '';
 
 	@Property({
 		type: createCustomType(GitActivityTypeEnum),
@@ -25,7 +25,7 @@ export class GitActivity extends BaseTimeEntity {
 	type: GitActivityTypeEnum;
 
 	@Property({ type: 'varchar', length: 255, comment: '레포명' })
-	repoName: string;
+	repoName: string = '';
 
 	@Property({ type: 'datetime', comment: '활동 시간' })
 	activityAt: Date;
