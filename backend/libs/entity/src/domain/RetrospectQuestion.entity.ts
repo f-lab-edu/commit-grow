@@ -20,7 +20,7 @@ export class RetrospectQuestion extends BaseTimeEntity {
 	answerText: string;
 
 	@Property({ type: 'int', comment: '질문 순서 (1~3)' })
-	sortOrder: number;
+	questionOrder: number;
 
 	@ManyToOne(() => Retrospect, {
 		nullable: false,
