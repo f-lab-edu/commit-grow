@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { EnviromentUtil } from '@app/environment/EnviromentUtil';
-import { defineConfig } from '@mikro-orm/postgresql';
+import { defineConfig, UnderscoreNamingStrategy } from '@mikro-orm/postgresql';
 
 const dbEnv = EnviromentUtil.getEnv().database;
 
@@ -14,6 +14,12 @@ const mikroOrmConfig = defineConfig({
 	entitiesTs: ['./libs/entity/src/domain/**/*.entity.ts'],
 	migrations: {
 		path: './script/migration',
+	},
+	namingStrategy: UnderscoreNamingStrategy,
+
+	schemaGenerator: {
+		// 성능 최적화를 위해서 fk 생성 안하게 설정
+		disableForeignKeys: true,
 	},
 
 	pool: {

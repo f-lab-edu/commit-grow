@@ -1,5 +1,8 @@
 export abstract class BaseCusomException extends Error {
-	constructor(message: string) {
+	constructor(
+		message: string,
+		readonly loggingMessage: string,
+	) {
 		super(message);
 		Error.captureStackTrace(this, this.constructor);
 	}

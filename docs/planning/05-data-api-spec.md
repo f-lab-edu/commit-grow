@@ -57,8 +57,9 @@ Purpose
 | 필드 | 타입 | 설명 |
 | --- | --- | --- |
 | id | uuid | PK |
-| userId | uuid (FK → User) | 소유자 |
-| activityDate | date | 활동 일자 |
+| userId | uuid (FK → User) | 소유자 ID |
+| retrospectId | uuid (FK → Retrospect) | 회고 ID |
+| activityAt | date | 활동 시간 |
 | git_id | varchar | git 기준 id | 
 | summary | varchar | 활동 요약 |
 | type | varchar | 활동 타입 (`COMMIT`, `ISSUE`, `PULL_REQUEST`, `CODE_REVIEW`) | 
@@ -72,7 +73,7 @@ Purpose
 | 필드 | 타입 | 설명 |
 | --- | --- | --- |
 | id | uuid | PK |
-| retrospectId | uuid (FK → Retrospect) | 소속 회고 |
+| retrospectId | uuid (FK → Retrospect) | 소속 회고 ID |
 | questionText | text | AI가 생성한 질문 |
 | answerText | text | 사용자 답변 원문 |
 | order | int | 질문 순서 (1~3) |
