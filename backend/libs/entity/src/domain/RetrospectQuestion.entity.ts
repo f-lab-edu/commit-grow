@@ -9,8 +9,8 @@ import { Retrospect } from './Retrospect.entity';
 
 @Entity({ tableName: 'retrospect_questions' })
 @Unique({
-	name: 'uk_retrospect_question_sort_order',
-	properties: ['sortOrder', 'retrospect'],
+	name: 'uk_retrospect_question_retrospect_question_order',
+	properties: ['retrospect', 'questionOrder'],
 })
 export class RetrospectQuestion extends BaseTimeEntity {
 	@Property({ type: 'text', comment: 'AI가 생성한 질문' })
