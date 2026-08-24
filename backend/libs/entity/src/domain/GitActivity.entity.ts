@@ -11,9 +11,9 @@ export class GitActivity extends BaseTimeEntity {
 		type: 'varchar',
 		length: 255,
 		unique: true,
-		comment: 'git 기준 id',
+		comment: 'github 기준 nodeId',
 	})
-	gitId: string;
+	githubNodeId: string;
 
 	@Property({ type: 'varchar', length: 255, comment: '활동 요약' })
 	summary: string = '';
