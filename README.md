@@ -84,6 +84,10 @@ GitHub 활동을 자동 수집·집계하여 데이터 기반 회고를 돕고, 
 | Claude Code       | AI 코딩 에이전트        |
 | ESLint + Prettier | NestJS 기본 설정        |
 
+### AI 커밋 메시지 자동 생성
+
+`./bin/setup.sh` 1회 실행 (Ollama 필요, 모델: `qwen2.5-coder:7b`). 이후 커밋 시 staged diff 기반으로 메시지 초안이 자동 채워집니다.
+
 ---
 
 ## 6. 주요 기능
