@@ -4,7 +4,7 @@
 
 **Goal:** 레퍼런스 프로젝트(TypeORM)에서 검증된 testcontainer 재사용 + worker별 격리 + 트랜잭션 롤백 + Factory 픽스처 전략을, MikroORM API로 치환해 이 프로젝트(`backend/`)에 이식한다.
 
-**Architecture:** vitest `test.projects`로 unit/integration을 분리하고, integration 쪽에만 `globalSetup`(Postgres/Redis testcontainer, `.withReuse()`)과 `setupFiles`(worker별 schema/redis db 격리)를 건다. MikroORM은 `@mikro-orm/nestjs`가 HTTP 미들웨어로만 등록하는 `RequestContext`를 테스트에서 수동으로 열어(`RequestContext.enter()`), 그 안에서 `em.begin()`/`em.rollback()`으로 매 테스트를 감싼다. 기존 정적 `docker-compose.test.yml` 기반 e2e(`test:e2e`)는 건드리지 않고 그대로 둔다 — 회귀 리스크 최소화.
+**Architecture:** vitest `test.projects`로 unit/integration을 분리하고, integration 쪽에만 `globalSetup`(Postgres/Redis testcontainer, `.withReuse()`)과 `setupFiles`(worker별 schema/redis db 격리)를 건다. MikroORM `EntityManager`는 Nest DI 프로바이더 자체를 `orm.em.fork()`(옵션 `useContext: false`)로 오버라이드해서, AsyncLocalStorage 없이 `beforeEach`(`em.begin()`)~`afterEach`(`em.rollback()`)로 매 테스트를 감싼다(자세한 배경은 Task 5 참고 — 처음엔 `RequestContext.enter()` 기반으로 시도했으나 Vitest 훅 경계를 못 넘어 재설계함). 기존 정적 `docker-compose.test.yml` 기반 e2e(`test:e2e`)는 건드리지 않고 그대로 둔다 — 회귀 리스크 최소화.
 
 **Tech Stack:** NestJS 11, MikroORM 7(`@mikro-orm/postgresql`, `@mikro-orm/nestjs`), Vitest 3.2, `testcontainers`/`@testcontainers/postgresql`/`@testcontainers/redis`, `redis`(v6) 패키지, pnpm.
 
@@ -347,7 +347,7 @@ git commit -m "test: worker별 Postgres schema / Redis db 격리 추가"
 
 ## Task 4: 스파이크 — MikroORM 트랜잭션 컨텍스트 공유 검증
 
-이 태스크의 목적은 "헬퍼가 시작한 트랜잭션을, 주입받은 서비스가 실제로 보는지"를 실제 testcontainer DB로 확인하는 것이다. `@mikro-orm/nestjs`는 `MikroOrmModule.forRoot()`가 **HTTP 미들웨어**로만 `RequestContext.create(orm.em, next)`를 등록한다(`node_modules/.../@mikro-orm/nestjs/mikro-orm-core.module.js`의 `configure()`) — HTTP 요청이 없는 서비스 단위 테스트에서는 이 미들웨어가 절대 실행되지 않으므로, 주입된 `EntityManager`는 그냥 `orm.em`(전역)을 본다. 따라서 테스트가 직접 컨텍스트를 열어야 한다. MikroORM core는 `RequestContext.enter(em)`(`AsyncLocalStorage.enterWith()` 기반, 콜백 불필요)를 제공하므로 `beforeEach`/`afterEach`처럼 나뉜 훅에서도 컨텍스트가 이어진다.
+> **두 번째 방향 변경**: 처음엔 `RequestContext.enter(em)`(AsyncLocalStorage `enterWith`)으로 컨텍스트를 열었으나, `beforeEach`→`it()` 훅 경계를 못 넘는 문제(아래 Task 5 참고) 때문에 `runInTransaction(fn)` wrapper로 우회했었다. 이후 **Nest DI의 `EntityManager` 프로바이더 자체를 `orm.em.fork()`(옵션 `useContext: false`)로 오버라이드**하는 방식으로 재설계 — 이 fork는 AsyncLocalStorage를 아예 거치지 않고 자기 자신의 `#transactionContext`를 직접 갖기 때문에, `beforeEach`에서 `begin()`한 트랜잭션을 `it()`/`afterEach`가 wrapper 없이 그대로 이어받는다(실측 검증 완료). 아래 스파이크 코드와 Task 5/7의 최종 코드는 이 최신 설계를 반영한다.
 
 **Files:**
 
@@ -355,71 +355,56 @@ git commit -m "test: worker별 Postgres schema / Redis db 격리 추가"
 
 **Interfaces:**
 
-- Consumes: `MikroORM`, `RequestContext`, `EntityManager`(모두 `@mikro-orm/core`), `User` 엔티티(`@app/entity/domain/User.entity`), `getWorkerSchema()`(Task 3).
-- Produces: 이 스파이크에서 검증한 `RequestContext.enter(em) → em.begin()` / `em.rollback()` 패턴이 Task 5 `ServiceIntTestHelper`의 구현 근거가 된다.
+- Consumes: `EntityManager`(`@mikro-orm/core`), `AuthModule`/`AuthService`(기존), `User` 엔티티, `ServiceIntTestHelper`(Task 5).
+- Produces: `beforeEach`(`ServiceIntTestHelper.of()` + `startTransaction()`) / `afterEach`(`rollbackTransaction()` + `moduleClose()`) 패턴이 실제 DI 주입 서비스에서도 동작함을 검증 — Task 5/7이 이 패턴을 그대로 쓴다.
 
-- [x] **Step 1: 실패(아직 존재하지 않는 동작 확인)하는 스파이크 테스트 작성**
+- [x] **Step 1: 스파이크 테스트 작성**
 
 ```ts
-import { EntityManager, MikroORM, RequestContext } from '@mikro-orm/core';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { EntityManager } from '@mikro-orm/core';
+import { MikroOrmModule } from '@mikro-orm/nestjs';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { AuthModule } from 'apps/api/src/auth/auth.module';
+import { AuthService } from 'apps/api/src/auth/auth.service';
 import { User } from '@app/entity/domain/User.entity';
-import testMikroOrmConfig from 'test-mikro-orm.config';
-import { getWorkerSchema } from 'test/setup/workerContext';
+import { ServiceIntTestHelper } from './ServiceIntTestHelper';
 
-describe('MikroORM 트랜잭션 컨텍스트 공유 스파이크', () => {
-	let orm: MikroORM;
+describe('ServiceIntTestHelper 트랜잭션 컨텍스트 공유 스파이크', () => {
+	let helper: ServiceIntTestHelper;
 
-	beforeAll(async () => {
-		orm = await MikroORM.init({
-			...testMikroOrmConfig,
-			schema: getWorkerSchema(),
-			entities: [],
-			entitiesTs: ['./libs/entity/src/domain/**/*.entity.ts'],
-		});
+	beforeEach(async () => {
+		helper = await ServiceIntTestHelper.of([MikroOrmModule.forFeature([User]), AuthModule]);
+		await helper.startTransaction();
 	});
 
-	afterAll(async () => {
-		await orm.close();
+	afterEach(async () => {
+		await helper.rollbackTransaction();
+		await helper.moduleClose();
 	});
 
-	it('RequestContext 안에서 만든 유저는, 같은 컨텍스트를 보는 다른 EntityManager 참조로도 조회된다', async () => {
-		// given
-		RequestContext.enter(orm.em);
-		const em = RequestContext.getEntityManager() as EntityManager;
-		await em.begin();
-
-		// when: em을 새로 fork하지 않고, "주입받은 EntityManager"를 흉내내기 위해
-		// RequestContext.getEntityManager()를 다시 호출해 같은 포크인지 확인한다.
+	it('beforeEach에서 시작한 트랜잭션 안에서 만든 유저를, it()에서 다른 EntityManager 참조로도 조회된다', async () => {
+		const em = helper.getService(EntityManager);
 		const user = User.create('spike-user', 'spike@example.com', 'spike-github-id');
 		em.persist(user);
 		await em.flush();
-		const emFromContextAgain = RequestContext.getEntityManager() as EntityManager;
-		const found = await emFromContextAgain.findOne(User, { githubId: 'spike-github-id' });
 
-		// then
+		const emFromServiceAgain = helper.getService(EntityManager);
+		const found = await emFromServiceAgain.findOne(User, { githubId: 'spike-github-id' });
 		expect(found?.id).toBe(user.id);
-
-		// cleanup
-		await em.rollback();
 	});
 
-	it('rollback 이후에는 같은 worker schema 안에서도 데이터가 남지 않는다', async () => {
-		// given
-		RequestContext.enter(orm.em);
-		const em = RequestContext.getEntityManager() as EntityManager;
-		await em.begin();
-		const user = User.create('spike-user-2', 'spike2@example.com', 'spike-github-id-2');
-		em.persist(user);
-		await em.flush();
-		await em.rollback();
+	it('생성자로 EntityManager를 주입받는 실제 서비스(AuthService)도 beforeEach의 트랜잭션을 그대로 본다', async () => {
+		const authService = helper.getService(AuthService);
+		const user = await authService.oauthLogin('spike-github-id-2', 'spike-user-2', 'spike2@example.com');
 
-		// when
-		RequestContext.enter(orm.em);
-		const freshEm = RequestContext.getEntityManager() as EntityManager;
-		const found = await freshEm.findOne(User, { githubId: 'spike-github-id-2' });
+		const em = helper.getService(EntityManager);
+		const found = await em.findOne(User, { githubId: 'spike-github-id-2' });
+		expect(found?.id).toBe(user.id);
+	});
 
-		// then
+	it('afterEach의 rollback 이후에는 같은 worker schema 안에서도 데이터가 남지 않는다', async () => {
+		const em = helper.getService(EntityManager);
+		const found = await em.findOne(User, { githubId: 'spike-github-id' });
 		expect(found).toBeNull();
 	});
 });
@@ -428,13 +413,13 @@ describe('MikroORM 트랜잭션 컨텍스트 공유 스파이크', () => {
 - [x] **Step 2: 실행해서 검증**
 
 Run: `cd backend && pnpm test:int`
-Expected: PASS. 실패한다면(특히 `emFromContextAgain`이 `em`과 다른 트랜잭션을 보는 경우) 이 문서의 격리 전략 자체를 재검토해야 하므로 — readme.md의 예외사항대로 — Task 5로 넘어가지 말고 먼저 보고한다.
+Expected: PASS. 실패하면(특히 AuthService 쪽이 다른 트랜잭션을 보는 경우) DI 오버라이드 배선을 재점검한다.
 
 - [x] **Step 3: 커밋**
 
 ```bash
 git add backend/libs/common/test-helper/transactionContext.spike.int-spec.ts
-git commit -m "test: MikroORM 트랜잭션 컨텍스트 공유 스파이크 검증"
+git commit
 ```
 
 (이 스파이크 파일은 Task 5 완성 후에도 리그레션 가드로 남겨둔다 — 지우지 않는다.)
@@ -451,11 +436,11 @@ git commit -m "test: MikroORM 트랜잭션 컨텍스트 공유 스파이크 검�
 
 **Interfaces:**
 
-- Consumes: `createTestingModule(imports, mikroOrmOverrides?)`(수정), `getWorkerSchema()`(Task 3), `RequestContext.enter`/`em.begin`/`em.rollback`(Task 4에서 검증).
-- Produces: `ServiceIntTestHelper.of(imports): Promise<ServiceIntTestHelper>`, `.getService<T>(service: Type<T>): T`, `.runInTransaction(fn): Promise<void>`, `.startTransaction(): Promise<void>`, `.rollbackTransaction(): Promise<void>`, `.moduleClose(): Promise<void>` — Task 7의 `auth.service.int-spec.ts`가 이 메서드들을 사용한다.
+- Consumes: `createTestingModule(imports, mikroOrmOverrides?)`(수정), `getWorkerSchema()`(Task 3).
+- Produces: `ServiceIntTestHelper.of(imports): Promise<ServiceIntTestHelper>`, `.getService<T>(service: Type<T>): T`, `.startTransaction(): Promise<void>`, `.rollbackTransaction(): Promise<void>`, `.moduleClose(): Promise<void>` — Task 7의 `auth.service.int-spec.ts`가 `beforeEach`/`afterEach`에서 직접 이 메서드들을 사용한다.
 
-> **구현 중 방향 변경**: `RequestContext.enter()`(AsyncLocalStorage `enterWith`)로 연 컨텍스트가 Vitest의 `beforeEach`→`it()` 훅 경계를 넘지 못함을 실측으로 확인(Vitest 3.2.7). 원안대로 `beforeEach`에서 `startTransaction()`, `it()`에서 서비스 호출, `afterEach`에서 `rollbackTransaction()`을 나누는 구조는 동작하지 않는다. `runInTransaction(fn)`으로 시작→콜백→롤백을 하나의 `it()` 콜스택 안에서 완결시키도록 변경(Task 4 스파이크가 실제로 통과한 패턴과 동일). `beforeEach`/`afterEach`는 RequestContext를 건드리지 않는 모듈 생성/종료(`of`/`moduleClose`)만 맡는다.
-
+> **최종 설계(두 번째 방향 변경)**: `RequestContext.enter()`(AsyncLocalStorage `enterWith`)는 Vitest `beforeEach`→`it()` 훅 경계를 못 넘는다(실측 확인, Vitest 3.2.7). 처음엔 `runInTransaction(fn)` wrapper로 우회했으나, 최종적으로는 **Nest DI의 `EntityManager` 프로바이더를 `orm.em.fork()`(옵션 `useContext: false`)로 오버라이드**하는 방식으로 재설계했다. 이 fork는 AsyncLocalStorage를 아예 거치지 않고 자기 상태(`#transactionContext`)를 직접 가지므로, `beforeEach`의 `startTransaction()` → `it()`의 서비스 호출 → `afterEach`의 `rollbackTransaction()`이 wrapper 없이 그대로 이어진다(Task 4 스파이크로 실측 검증, 실제 DI 주입 서비스인 AuthService로도 확인).
+>
 > 추가로 `ServiceIntTestHelper.of(imports)`는 `imports`에 최소 하나 이상 `MikroOrmModule.forFeature([Entity])`가 있어야 한다 — `autoLoadEntities`는 forFeature로 등록된 엔티티만 모으므로, imports가 비어 있으면 "No entities found" 에러가 난다.
 
 - [x] **Step 1: `createTestingModule.ts`에 MikroORM 옵션 오버라이드 파라미터 추가**
@@ -495,7 +480,7 @@ export function createTestingModule(
 - [x] **Step 2: `ServiceIntTestHelper.ts` 작성**
 
 ```ts
-import { EntityManager, MikroORM, RequestContext } from '@mikro-orm/core';
+import { EntityManager, MikroORM } from '@mikro-orm/core';
 import type { ModuleMetadata, Type } from '@nestjs/common';
 import type { TestingModule } from '@nestjs/testing';
 import { getWorkerSchema } from 'test/setup/workerContext';
@@ -505,39 +490,35 @@ export class ServiceIntTestHelper {
 	private constructor(
 		private readonly testModule: TestingModule,
 		private readonly orm: MikroORM,
+		private readonly em: EntityManager,
 	) {}
 
 	static async of(imports: ModuleMetadata['imports'] = []) {
 		const testModule = await createTestingModule(imports as any[], {
 			schema: getWorkerSchema(),
-		}).compile();
+		})
+			.overrideProvider(EntityManager)
+			.useFactory({ factory: (orm) => orm.em.fork(), inject: [MikroORM] })
+			.compile();
 		const orm = testModule.get(MikroORM);
+		const em = testModule.get(EntityManager);
 
-		return new ServiceIntTestHelper(testModule, orm);
+		return new ServiceIntTestHelper(testModule, orm, em);
 	}
 
 	getService<T>(service: Type<T>): T {
 		return this.testModule.get(service);
 	}
 
-	async runInTransaction(fn: () => Promise<void>): Promise<void> {
-		await this.startTransaction();
-		try {
-			await fn();
-		} finally {
-			await this.rollbackTransaction();
-		}
-	}
-
 	async startTransaction(): Promise<void> {
-		RequestContext.enter(this.orm.em);
-		const em = RequestContext.getEntityManager() as EntityManager;
-		await em.begin();
+		await this.em.begin();
 	}
 
 	async rollbackTransaction(): Promise<void> {
-		const em = RequestContext.getEntityManager() as EntityManager;
-		await em.rollback();
+		if (!this.em.isInTransaction()) {
+			throw new Error('테스트 대상 서비스가 트랜잭션을 직접 commit/rollback한 것으로 보입니다. ...');
+		}
+		await this.em.rollback();
 	}
 
 	async moduleClose(): Promise<void> {
@@ -546,6 +527,8 @@ export class ServiceIntTestHelper {
 	}
 }
 ```
+
+`EntityManager` DI 프로바이더를 `orm.em.fork()`(옵션 `useContext: false`)로 오버라이드하는 게 핵심 — 이 fork는 AsyncLocalStorage 없이 자기 상태를 직접 갖고 있어서, `beforeEach`/`it()`/`afterEach`에 걸쳐 같은 트랜잭션이 그대로 유지된다. `rollbackTransaction()`은 서비스가 트랜잭션을 직접 commit/rollback해버린 경우(`em.isInTransaction()`이 `false`)를 감지해 명확한 에러로 알려준다(전체 에러 문구는 실제 소스 참고).
 
 - [x] **Step 3: 헬퍼 자체를 검증하는 테스트 작성(Task 7의 축소판, 헬퍼 전용)**
 
@@ -561,30 +544,33 @@ describe('ServiceIntTestHelper', () => {
 
 	beforeEach(async () => {
 		helper = await ServiceIntTestHelper.of([MikroOrmModule.forFeature([User])]);
+		await helper.startTransaction();
 	});
 
 	afterEach(async () => {
+		await helper.rollbackTransaction();
 		await helper.moduleClose();
 	});
 
 	it('트랜잭션 롤백 후에는 저장한 엔티티가 남지 않는다', async () => {
-		// given & when: 트랜잭션 안에서 저장 후 종료(runInTransaction이 자동 롤백)
-		await helper.runInTransaction(async () => {
-			const em = helper.getService(EntityManager);
-			const user = User.create('helper-user', 'helper@example.com', 'helper-github-id');
-			em.persist(user);
-			await em.flush();
-		});
+		// given & when
+		const em = helper.getService(EntityManager);
+		const user = User.create('helper-user', 'helper@example.com', 'helper-github-id');
+		em.persist(user);
+		await em.flush();
 
-		// then: 새 트랜잭션에서 조회하면 남아있지 않다
-		await helper.runInTransaction(async () => {
-			const em = helper.getService(EntityManager);
-			const found = await em.findOne(User, { githubId: 'helper-github-id' });
-			expect(found).toBeNull();
-		});
+		// then
+		await helper.rollbackTransaction();
+		const found = await em.findOne(User, { githubId: 'helper-github-id' });
+		expect(found).toBeNull();
+
+		// afterEach가 다시 rollbackTransaction을 부르지 않도록 새 트랜잭션을 시작해둔다
+		await helper.startTransaction();
 	});
 });
 ```
+
+(실제 파일에는 `em.transactional()` SAVEPOINT 중첩 검증, 에러 시 SAVEPOINT만 롤백되는지 검증, `em.commit()` 직접 호출 시 에러 검증 테스트가 더 있다.)
 
 - [x] **Step 4: 실행해서 확인**
 
@@ -798,44 +784,43 @@ import { AuthService } from './auth.service';
 
 describe('AuthService.oauthLogin', () => {
 	let helper: ServiceIntTestHelper;
+	let authService: AuthService;
+	let factoryManager: FactoryManager;
 
 	beforeEach(async () => {
 		helper = await ServiceIntTestHelper.of([AuthModule]);
+		await helper.startTransaction();
+		authService = helper.getService(AuthService);
+		factoryManager = new FactoryManager(helper.getService(EntityManager));
 	});
 
 	afterEach(async () => {
+		await helper.rollbackTransaction();
 		await helper.moduleClose();
 	});
 
 	it('기존 유저가 없으면 새 유저를 생성해서 반환한다', async () => {
-		await helper.runInTransaction(async () => {
-			// given
-			const authService = helper.getService(AuthService);
-			// (githubId '1000'에 해당하는 유저 없음)
+		// given
+		// (githubId '1000'에 해당하는 유저 없음)
 
-			// when
-			const user = await authService.oauthLogin('1000', 'new-user', 'new-user@example.com');
+		// when
+		const user = await authService.oauthLogin('1000', 'new-user', 'new-user@example.com');
 
-			// then
-			expect(user.githubId).toBe('1000');
-			expect(user.userName).toBe('new-user');
-		});
+		// then
+		expect(user.githubId).toBe('1000');
+		expect(user.userName).toBe('new-user');
 	});
 
 	it('기존 유저가 있으면 새로 만들지 않고 그대로 반환한다', async () => {
-		await helper.runInTransaction(async () => {
-			// given
-			const authService = helper.getService(AuthService);
-			const factoryManager = new FactoryManager(helper.getService(EntityManager));
-			const existing = await factoryManager.userFactory.save({ githubId: '2000' });
+		// given
+		const existing = await factoryManager.userFactory.save({ githubId: '2000' });
 
-			// when
-			const user = await authService.oauthLogin('2000', 'ignored-name', 'ignored@example.com');
+		// when
+		const user = await authService.oauthLogin('2000', 'ignored-name', 'ignored@example.com');
 
-			// then
-			expect(user.id).toBe(existing.id);
-			expect(user.userName).toBe(existing.userName);
-		});
+		// then
+		expect(user.id).toBe(existing.id);
+		expect(user.userName).toBe(existing.userName);
 	});
 });
 ```
