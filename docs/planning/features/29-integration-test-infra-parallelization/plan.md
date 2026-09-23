@@ -422,7 +422,7 @@ git add backend/libs/common/test-helper/transactionContext.spike.int-spec.ts
 git commit
 ```
 
-(이 스파이크 파일은 Task 5 완성 후에도 리그레션 가드로 남겨둔다 — 지우지 않는다.)
+(당초 Task 5 완성 후에도 리그레션 가드로 남겨두기로 했으나, `ServiceIntTestHelper.int-spec.ts`/`auth.service.int-spec.ts`가 이미 같은 동작을 검증하고 있어 중복 판단 — 스파이크 파일은 삭제.)
 
 ---
 
