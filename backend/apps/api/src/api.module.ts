@@ -6,6 +6,7 @@ import { ConfigModule } from '@nestjs/config';
 import { mikroOrmConfig } from 'mikro-orm.config';
 import { ApiController } from './api.controller';
 import { AuthModule } from './auth/auth.module';
+import { GitActivityModule } from './git-activity/git-activity.module';
 
 @Module({
 	imports: [
@@ -16,6 +17,7 @@ import { AuthModule } from './auth/auth.module';
 		generatePinoLoggerModule(),
 		MikroOrmModule.forRoot({ ...mikroOrmConfig, autoLoadEntities: true }),
 		AuthModule,
+		GitActivityModule,
 	],
 	controllers: [ApiController],
 	providers: [],

@@ -1,3 +1,4 @@
+import { GitActivityTypeEnum } from '@app/entity/enums/GitActivityTypeEnum';
 import type { Environment } from '@app/environment/schema/Environment';
 import type { ConfigService } from '@nestjs/config';
 import type { Logger } from 'nestjs-pino';
@@ -102,7 +103,118 @@ describe('GithubClientService', () => {
 			});
 		});
 	});
+
+	describe('fetchTodayGitActivities', () => {
+		// search API 4개 호출은 throttling 플러그인이 GitHub search 레이트리밋(분당 30회)에 맞춰
+		// 순차적으로 spacing을 두기 때문에 기본 5000ms 타임아웃을 넘길 수 있어 늘려둠
+		it('로그인 사용자의 오늘 커밋/이슈/PR/리뷰를 조회해 타입별 RawGitActivity로 변환한다', async () => {
+			// given
+			fetchMock.mockImplementation((url: string) => {
+				const decoded = decodeURIComponent(url.toString());
+
+				if (decoded.endsWith('/user')) {
+					return jsonResponse({ login: 'octocat' });
+				}
+				if (decoded.includes('/search/commits')) {
+					return jsonResponse({
+						items: [
+							{
+								commit: {
+									message: '커밋 메시지\n본문 설명',
+									author: { date: '2026-08-29T01:00:00Z' },
+								},
+								repository: { full_name: 'octocat/repo' },
+								node_id: 'commit-node-1',
+							},
+						],
+					});
+				}
+				if (decoded.includes('/search/issues')) {
+					if (decoded.includes('type:issue')) {
+						return jsonResponse({
+							items: [
+								{
+									title: '이슈 제목',
+									repository_url: 'https://api.github.com/repos/octocat/repo',
+									node_id: 'issue-node-1',
+									created_at: '2026-08-29T02:00:00Z',
+								},
+							],
+						});
+					}
+					if (decoded.includes('reviewed-by:octocat')) {
+						return jsonResponse({
+							items: [
+								{
+									title: 'PR 리뷰 대상',
+									repository_url: 'https://api.github.com/repos/octocat/repo',
+									node_id: 'review-node-1',
+									updated_at: '2026-08-29T04:00:00Z',
+								},
+							],
+						});
+					}
+					if (decoded.includes('type:pr')) {
+						return jsonResponse({
+							items: [
+								{
+									title: 'PR 제목',
+									repository_url: 'https://api.github.com/repos/octocat/repo',
+									node_id: 'pr-node-1',
+									created_at: '2026-08-29T03:00:00Z',
+								},
+							],
+						});
+					}
+				}
+
+				throw new Error(`예상하지 못한 요청입니다: ${url}`);
+			});
+
+			// when
+			const result = await service.fetchTodayGitActivities('access-token');
+
+			// then
+			expect(result).toEqual([
+				{
+					type: GitActivityTypeEnum.COMMIT,
+					title: '커밋 메시지',
+					repoName: 'octocat/repo',
+					githubNodeId: 'commit-node-1',
+					activityAt: new Date('2026-08-29T01:00:00Z'),
+				},
+				{
+					type: GitActivityTypeEnum.ISSUE,
+					title: '이슈 제목',
+					repoName: 'octocat/repo',
+					githubNodeId: 'issue-node-1',
+					activityAt: new Date('2026-08-29T02:00:00Z'),
+				},
+				{
+					type: GitActivityTypeEnum.PULL_REQUEST,
+					title: 'PR 제목',
+					repoName: 'octocat/repo',
+					githubNodeId: 'pr-node-1',
+					activityAt: new Date('2026-08-29T03:00:00Z'),
+				},
+				{
+					type: GitActivityTypeEnum.CODE_REVIEW,
+					title: 'PR 리뷰 대상',
+					repoName: 'octocat/repo',
+					githubNodeId: 'review-node-1',
+					activityAt: new Date('2026-08-29T04:00:00Z'),
+				},
+			]);
+		}, 10000);
+	});
 });
+
+function jsonResponse(body: unknown): Response {
+	return new Response(JSON.stringify(body), {
+		status: 200,
+		headers: { 'content-type': 'application/json' },
+	});
+}
 
 function createService(
 	oauthGithubConfig: {
@@ -110,7 +222,7 @@ function createService(
 		clientSecret: string;
 		callbackURL: string;
 	},
-	logger,
+	logger: { log: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> },
 ) {
 	const configService = {
 		getOrThrow: vi.fn().mockReturnValue(oauthGithubConfig),
