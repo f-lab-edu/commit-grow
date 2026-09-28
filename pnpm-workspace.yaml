@@ -7,6 +7,9 @@ catalog:
 allowBuilds:
   "@scarf/scarf": true
   "@swc/core": true
+  cpu-features: true
   esbuild: true
+  protobufjs: true
   sharp: true
+  ssh2: true
   unrs-resolver: true
