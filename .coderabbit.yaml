@@ -1,3 +1,5 @@
 reviews:
   auto_review:
     drafts: true
+    base_branches:
+      - ".*"   # 모든 base 브랜치 허용. feature 브랜치만 원하면 "feature/.*"
