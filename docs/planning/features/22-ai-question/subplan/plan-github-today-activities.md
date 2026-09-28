@@ -60,4 +60,53 @@
 - spec.ts: `fetchMock = vi.fn()` → `fetchMock = mockFn<typeof fetch>()`로 교체해 `fetch(input, init)` 인자/응답 타입 체크 활성화. 이 과정에서 `requestInit.headers.authorization` 직접 접근이 타입 에러가 나서 `new Headers(requestInit?.headers).get('authorization')`로 수정(HeadersInit이 여러 형태를 허용하는 유니온이라 정규화 필요) — Octokit을 mock하지 않고 fetch만 mock하는 기존 전략(헤더 병합 버그를 실제 요청 조립 로직으로 잡기 위함)은 그대로 유지
 
 - [x] **Step 1~4: TDD로 테스트/구현 동시 치환** — 기존 테스트를 Temporal 타입으로 다시 작성 → 컴파일 에러로 실패 확인 → 서비스/DTO 타입 교체 → 10개 전부 통과, eslint/biome 클린
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
+
+---
+
+## Task 3: GitHub 이벤트 payload class-validator 검증 DTO 도입
+
+**Goal:** GitHub API 응답 payload(외부 신뢰 경계)를 로컬 인터페이스 캐스팅 대신 class-validator DTO로 검증, 실패 시 로그 남기고 해당 이벤트만 skip
+
+**Spec:** 브레인스토밍 결과(사용자 요청) — 기존 `apps/api/src/auth/dto/GithubOauthCallbackResponseDto.ts` 패턴(`static of(raw)` 팩토리 + 호출부 `validateSync()`) 재사용
+
+- `dto/GithubEvent.dto.ts` 신규 — payload만 검증 대상(이벤트 최상위 `type`/`repo`/`created_at`은 Octokit이 이미 타입 보장해서 중복 검증 불필요). service.ts가 실제로 쓰는 최상위 4개만 `export`(ResponseDto 접미사), 내부 조립에만 쓰는 리프 타입은 비-export + `Item` 접미사로 구분(사용자 피드백 반영):
+  - `export GithubPushEventPayloadResponseDto` ← (비공개)`GithubCommitItem`
+  - `export GithubIssuesEventPayloadResponseDto` ← (비공개)`GithubIssueItem`
+  - `export GithubPullRequestEventPayloadResponseDto` ← (비공개)`GithubPullRequestItem`
+  - `export GithubPullRequestReviewEventPayloadResponseDto` ← (비공개)`GithubPullRequestItem`, `GithubReviewItem`
+- `github-client.service.ts`: 이벤트 타입별로 해당 payload DTO `.of(rawPayload)` 생성 → `hasValidationError()` 헬퍼(`validateSync` + 실패시 `logger.error` 후 true 반환)로 검증 → 실패시 `continue`(skip)
+- `dto/GitActivity.dto.ts`도 `dto/` 폴더로 함께 이동(신규 컨벤션)
+
+- [x] **Step 1: 실패하는 테스트 작성** — payload 필수 필드(sha/title/node_id 등) 누락된 이벤트 4종류(PushEvent/IssuesEvent/PullRequestEvent/PullRequestReviewEvent)가 skip되고 `logger.error`가 4번 호출되는지 검증
+- [x] **Step 2: 테스트 실행해서 실패 확인** — 검증 로직 없어서 4개 이벤트가 그대로 통과되어 실패
+- [x] **Step 3: 최소 구현 작성** — `GithubEvent.dto.ts` DTO 8개 + service의 `hasValidationError()` 헬퍼로 교체
+- [x] **Step 4: 테스트 실행해서 통과 확인** — 11개 전부 통과(기존 PullRequestReviewEvent 정상 케이스 fixture에 `pull_request.node_id` 누락돼있던 것도 이번에 발견해 실제 GitHub API 형태에 맞게 수정), eslint/biome 클린
+- [x] **Step 5: 커밋**
+
+#### 후속 반영(사용자 피드백)
+
+- export 범위 축소: service.ts가 실제로 쓰는 최상위 4개 payload DTO만 `export`, 내부 리프 타입(`GithubCommitItem`/`GithubIssueItem`/`GithubPullRequestItem`/`GithubReviewItem`)은 비-export + `Item` 접미사로 구분
+- 이벤트 최상위(`type`/`repoName`/`createdAt`)도 `GithubEventResponseDto`로 감싸 검증하도록 확장(기존엔 Octokit 타입만 믿고 `!event.created_at` 수동 체크만 했었음) — 검증 실패시 동일하게 로그 남기고 skip. 테스트 1개 추가(12개 전부 통과)
+- `type` 필드 비교용 `GithubEventType` enum 추가(PUSH/ISSUES/PULL_REQUEST/PULL_REQUEST_REVIEW). 처음엔 `libs/entity`의 `BaseEnum.valueOf()`가 매칭 실패시 throw해서 안 맞는다고 보고 native TS enum으로 갔었으나, 최종적으로는 **`BaseEnum`을 유지하되 `valueOfOrUndefined()`(매칭 실패시 throw 대신 `undefined` 반환)를 새로 추가**해서 씀(아래 Task 4 참고) — 기존 `valueOf()`의 throw 동작에 의존하는 다른 도메인 enum(예: `GitActivityTypeEnum`)은 건드리지 않음
+
+---
+
+## Task 4: 동시편집 정합성 복구 + 구조 재편(집계형 반환)
+
+**배경:** Task 3 커밋 이후 여러 파일이 동시에(직접 IDE 편집으로) 빠르게 바뀌면서 tsc 에러 5개 + 런타임 크래시 버그(`type`을 실제 enum 변환 없이 `as` 캐스팅만 해서 `.isEqaul()` 호출시 터짐) + Task 1에서 승인받은 `startedAt`/`endedAt` 범위필터가 통째로 사라진 상태가 됐음. 복구하면서 동시에 사용자가 원하던 구조 개선(파일 분리, 응답 집계 방식)도 함께 반영.
+
+**최종 구조:**
+
+- `backend/libs/entity/src/enums/BaseEnum.ts`: `valueOfOrUndefined()` 추가(매칭 실패시 throw 대신 `undefined`)
+- `backend/libs/github-client/src/enum/GithubEventType.ts`: `BaseEnum` 기반, PUSH/ISSUES/PULL_REQUEST/PULL_REQUEST_REVIEW 4개 멤버
+- `backend/libs/github-client/src/dto/activity/`: DTO 전부 이 폴더로 통합
+  - `GithubEventResponseDto.ts` — `type: GithubEventType | undefined`, `createdAt: string`(파싱은 검증 통과 후 서비스에서 — `.of()` 안에서 바로 `Temporal.Instant.from()` 하면 `created_at: null`류 malformed 이벤트 하나가 전체 `getActivities()` 호출을 통째로 reject시켜서 안 됨)
+  - `GithubPushEventPayload.dto.ts` / `GithubIssuesEventPayload.dto.ts` / `GithubPullRequestEventPayload.dto.ts` / `GithubPullRequestReviewEventPayload.dto.ts` — 각 payload별 파일 분리, 클래스명도 `...PayloadDto`(Response 접미사 제거)
+  - `GitActivity.dto.ts` — **flat 배열 대신 유형별 집계 객체로 재설계**: `{ commits: [], issues: [], pullRequests: [], codeReviews: [] }`, 각 그룹에 `addByPushPayload()`/`addByIssuesPayload()`/`addByPullRequestPayload()`/`addByPullRequestReviewPayload()` 메서드로 채움(FT-04-1 "유형별 개수 집계" 요구사항에 더 직접 부합 — `type` 필드 자체가 없어져서 `GitActivityTypeEnum` 의존성도 제거됨)
+- `github-client.service.ts`: `getActivities()` 반환 타입이 `GitActivityDto[]` → `GitActivityDto`(단일 집계 객체)로 변경. 이벤트를 `.map()` + `.filter()`로 먼저 검증/범위필터링한 뒤, 유효한 이벤트만 순회하며 타입별로 `resultDto.addByXxxPayload()` 호출
+- 삭제: `dto/activity/GitActivityPayload.ts`(안 쓰이는 스텁), 정리: `libs/common/src/transformer/ToBaseEnum copy.ts` → `ToTemporalInstant.ts`로 rename(사용자가 직접 처리)
+
+- [x] 테스트 전체를 집계 객체 형태(`expect.objectContaining({ commits: [...], issues: [...], ... })`)로 재작성, 12개 전부 통과
+- [x] eslint/biome 클린, github-client + entity + api 전체 tsc 클린(무관한 pre-existing 에러 1건 제외)
+- [ ] **커밋**
