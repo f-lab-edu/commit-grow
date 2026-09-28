@@ -232,7 +232,7 @@ export class GithubClientService {
 
 			const lastResult = settledResponses[settledResponses.length - 1];
 			if (lastResult.status === 'fulfilled' && lastResult.value.data.length === 0) {
-				break;
+				reachedBoundary = true;
 			}
 
 			page += WINDOW_SIZE;
