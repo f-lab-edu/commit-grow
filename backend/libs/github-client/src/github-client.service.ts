@@ -17,6 +17,7 @@ import { GithubEventType } from './enum/GithubEventType';
 
 const WINDOW_SIZE = 3;
 const MAX_WINDOW_COUNT = 2;
+const MAX_RETRIES = 2;
 
 type EventsPageResponse = Awaited<
 	ReturnType<
@@ -59,7 +60,7 @@ export class GithubClientService {
 			`${this.clientId}:${this.clientSecret}`,
 		).toString('base64')}`;
 
-		this.otokit = new Octokit({ retry: { retries: 2 } });
+		this.otokit = new Octokit({ retry: { retries: MAX_RETRIES } });
 
 		this.validate();
 	}
@@ -196,8 +197,7 @@ export class GithubClientService {
 
 			eventDtos.push(...windowResult.eventDtos);
 			reachedBoundary =
-				windowResult.reachedBoundary ||
-				this.isLastPageEmpty(settledResponses);
+				windowResult.reachedBoundary || this.isLastPageEmpty(settledResponses);
 
 			page += WINDOW_SIZE;
 		}
