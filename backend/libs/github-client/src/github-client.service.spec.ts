@@ -1,8 +1,10 @@
 import { GitActivityTypeEnum } from '@app/entity/enums/GitActivityTypeEnum';
 import type { Environment } from '@app/environment/schema/Environment';
 import type { ConfigService } from '@nestjs/config';
+import { Temporal } from '@js-temporal/polyfill';
 import type { Logger } from 'nestjs-pino';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { mockFn } from 'vitest-mock-extended';
 import { GithubClientService } from './github-client.service';
 
 // octokit 모듈은 목킹하지 않는다. new Octokit({ request: { headers } })가
@@ -24,11 +26,11 @@ describe('GithubClientService', () => {
 		log: ReturnType<typeof vi.fn>;
 		error: ReturnType<typeof vi.fn>;
 	};
-	let fetchMock: ReturnType<typeof vi.fn>;
+	let fetchMock: ReturnType<typeof mockFn<typeof fetch>>;
 
 	beforeEach(() => {
 		logger = { log: vi.fn(), error: vi.fn() };
-		fetchMock = vi.fn();
+		fetchMock = mockFn<typeof fetch>();
 		vi.stubGlobal('fetch', fetchMock);
 		service = createService(oauthGithubConfig, logger);
 	});
@@ -56,8 +58,8 @@ describe('GithubClientService', () => {
 			expect(fetchMock).toHaveBeenCalledTimes(1);
 			const [url, requestInit] = fetchMock.mock.calls[0];
 			expect(url).toBe('https://api.github.com/applications/client-id/token');
-			expect(requestInit.method).toBe('DELETE');
-			expect(requestInit.headers.authorization).toBe(
+			expect(requestInit?.method).toBe('DELETE');
+			expect(new Headers(requestInit?.headers).get('authorization')).toBe(
 				expectedAuthorizationHeader,
 			);
 		});
@@ -105,8 +107,8 @@ describe('GithubClientService', () => {
 	});
 
 	describe('getActivities', () => {
-		const startedAt = new Date('2026-09-28T00:00:00.000Z');
-		const endedAt = new Date('2026-09-29T00:00:00.000Z');
+		const startedAt = Temporal.Instant.from('2026-09-28T00:00:00.000Z');
+		const endedAt = Temporal.Instant.from('2026-09-29T00:00:00.000Z');
 
 		function mockEventsResponse(events: unknown[]) {
 			fetchMock.mockResolvedValueOnce(
@@ -150,14 +152,14 @@ describe('GithubClientService', () => {
 					summary: 'feat: 커밋1',
 					repoName: 'octocat/repo',
 					githubNodeId: 'sha-1',
-					activityAt: new Date('2026-09-28T10:00:00Z'),
+					activityAt: Temporal.Instant.from('2026-09-28T10:00:00Z'),
 				}),
 				expect.objectContaining({
 					type: GitActivityTypeEnum.COMMIT,
 					summary: 'fix: 커밋2',
 					repoName: 'octocat/repo',
 					githubNodeId: 'sha-2',
-					activityAt: new Date('2026-09-28T10:00:00Z'),
+					activityAt: Temporal.Instant.from('2026-09-28T10:00:00Z'),
 				}),
 			]);
 		});
@@ -193,7 +195,7 @@ describe('GithubClientService', () => {
 					summary: '이슈 제목',
 					repoName: 'octocat/repo',
 					githubNodeId: 'issue-node-id',
-					activityAt: new Date('2026-09-28T11:00:00Z'),
+					activityAt: Temporal.Instant.from('2026-09-28T11:00:00Z'),
 				}),
 			]);
 		});
@@ -229,7 +231,7 @@ describe('GithubClientService', () => {
 					summary: 'PR 제목',
 					repoName: 'octocat/repo',
 					githubNodeId: 'pr-node-id',
-					activityAt: new Date('2026-09-28T12:00:00Z'),
+					activityAt: Temporal.Instant.from('2026-09-28T12:00:00Z'),
 				}),
 			]);
 		});
@@ -266,7 +268,7 @@ describe('GithubClientService', () => {
 					summary: 'PR 제목',
 					repoName: 'octocat/repo',
 					githubNodeId: 'review-node-id',
-					activityAt: new Date('2026-09-28T13:00:00Z'),
+					activityAt: Temporal.Instant.from('2026-09-28T13:00:00Z'),
 				}),
 			]);
 		});

@@ -2,6 +2,7 @@ import { SystemException } from '@app/common/exception/SystemException';
 import { GitActivityTypeEnum } from '@app/entity/enums/GitActivityTypeEnum';
 import { Environment } from '@app/environment/schema/Environment';
 import { OAuthGithubEnvironment } from '@app/environment/schema/OAuthGithubEnvironment';
+import { Temporal } from '@js-temporal/polyfill';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { IsNotEmpty, IsString, validateSync } from 'class-validator';
@@ -73,8 +74,8 @@ export class GithubClientService {
 	async getActivities(
 		accessToken: string,
 		username: string,
-		startedAt: Date,
-		endedAt: Date,
+		startedAt: Temporal.Instant,
+		endedAt: Temporal.Instant,
 	): Promise<GitActivityDto[]> {
 		const { data: events } = await this.otokit.rest.activity.listPublicEventsForUser(
 			{
@@ -88,8 +89,11 @@ export class GithubClientService {
 			if (!event.created_at) {
 				continue;
 			}
-			const activityAt = new Date(event.created_at);
-			if (activityAt < startedAt || activityAt >= endedAt) {
+			const activityAt = Temporal.Instant.from(event.created_at);
+			if (
+				Temporal.Instant.compare(activityAt, startedAt) < 0 ||
+				Temporal.Instant.compare(activityAt, endedAt) >= 0
+			) {
 				continue;
 			}
 
