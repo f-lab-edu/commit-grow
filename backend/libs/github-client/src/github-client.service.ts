@@ -225,15 +225,6 @@ export class GithubClientService {
 	): Promise<GithubEventResponseDto[]> {
 		const eventDtos: GithubEventResponseDto[] = [];
 
-		const fetchPage = (pageNumber: number) =>
-			this.otokit.rest.activity.listPublicEventsForUser({
-				username,
-				page: pageNumber,
-				per_page: this.eventsPerPage,
-				headers: { authorization: `token ${accessToken}` },
-				request: { signal: AbortSignal.timeout(this.requestTimeoutMs) },
-			});
-
 		let page = 1;
 		let reachedBoundary = false;
 
@@ -243,7 +234,9 @@ export class GithubClientService {
 				(_, i) => page + i,
 			);
 			const settledResponses = await Promise.allSettled(
-				pageNumbers.map((pageNumber) => fetchPage(pageNumber)),
+				pageNumbers.map((pageNumber) =>
+					this.fetchPublicEvent(accessToken, username, pageNumber),
+				),
 			);
 
 			const fulfilledResponses = this.extractFulfilledResponses(
@@ -264,6 +257,20 @@ export class GithubClientService {
 		}
 
 		return eventDtos;
+	}
+
+	private fetchPublicEvent(
+		accessToken: string,
+		username: string,
+		pageNumber: number,
+	): Promise<EventsPageResponse> {
+		return this.otokit.rest.activity.listPublicEventsForUser({
+			username,
+			page: pageNumber,
+			per_page: this.eventsPerPage,
+			headers: { authorization: `token ${accessToken}` },
+			request: { signal: AbortSignal.timeout(this.requestTimeoutMs) },
+		});
 	}
 
 	private extractFulfilledResponses(
