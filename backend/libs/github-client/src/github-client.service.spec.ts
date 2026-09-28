@@ -1,3 +1,4 @@
+import { GitActivityTypeEnum } from '@app/entity/enums/GitActivityTypeEnum';
 import type { Environment } from '@app/environment/schema/Environment';
 import type { ConfigService } from '@nestjs/config';
 import type { Logger } from 'nestjs-pino';
@@ -100,6 +101,236 @@ describe('GithubClientService', () => {
 			expect(logger.error).toHaveBeenCalledWith('토큰 무효화를 실패했습니다.', {
 				error: expect.objectContaining({ status: 401 }),
 			});
+		});
+	});
+
+	describe('getActivities', () => {
+		const startedAt = new Date('2026-09-28T00:00:00.000Z');
+		const endedAt = new Date('2026-09-29T00:00:00.000Z');
+
+		function mockEventsResponse(events: unknown[]) {
+			fetchMock.mockResolvedValueOnce(
+				new Response(JSON.stringify(events), {
+					status: 200,
+					headers: { 'content-type': 'application/json' },
+				}),
+			);
+		}
+
+		it('PushEvent의 커밋들을 커밋별 개별 COMMIT 활동으로 반환한다', async () => {
+			// given
+			mockEventsResponse([
+				{
+					id: '1',
+					type: 'PushEvent',
+					repo: { id: 1, name: 'octocat/repo', url: '' },
+					payload: {
+						commits: [
+							{ sha: 'sha-1', message: 'feat: 커밋1' },
+							{ sha: 'sha-2', message: 'fix: 커밋2' },
+						],
+					},
+					public: true,
+					created_at: '2026-09-28T10:00:00Z',
+				},
+			]);
+
+			// when
+			const result = await service.getActivities(
+				'access-token',
+				'octocat',
+				startedAt,
+				endedAt,
+			);
+
+			// then
+			expect(result).toEqual([
+				expect.objectContaining({
+					type: GitActivityTypeEnum.COMMIT,
+					summary: 'feat: 커밋1',
+					repoName: 'octocat/repo',
+					githubNodeId: 'sha-1',
+					activityAt: new Date('2026-09-28T10:00:00Z'),
+				}),
+				expect.objectContaining({
+					type: GitActivityTypeEnum.COMMIT,
+					summary: 'fix: 커밋2',
+					repoName: 'octocat/repo',
+					githubNodeId: 'sha-2',
+					activityAt: new Date('2026-09-28T10:00:00Z'),
+				}),
+			]);
+		});
+
+		it('IssuesEvent(opened)를 ISSUE 활동으로 반환한다', async () => {
+			// given
+			mockEventsResponse([
+				{
+					id: '2',
+					type: 'IssuesEvent',
+					repo: { id: 1, name: 'octocat/repo', url: '' },
+					payload: {
+						action: 'opened',
+						issue: { node_id: 'issue-node-id', title: '이슈 제목' },
+					},
+					public: true,
+					created_at: '2026-09-28T11:00:00Z',
+				},
+			]);
+
+			// when
+			const result = await service.getActivities(
+				'access-token',
+				'octocat',
+				startedAt,
+				endedAt,
+			);
+
+			// then
+			expect(result).toEqual([
+				expect.objectContaining({
+					type: GitActivityTypeEnum.ISSUE,
+					summary: '이슈 제목',
+					repoName: 'octocat/repo',
+					githubNodeId: 'issue-node-id',
+					activityAt: new Date('2026-09-28T11:00:00Z'),
+				}),
+			]);
+		});
+
+		it('PullRequestEvent(opened)를 PULL_REQUEST 활동으로 반환한다', async () => {
+			// given
+			mockEventsResponse([
+				{
+					id: '3',
+					type: 'PullRequestEvent',
+					repo: { id: 1, name: 'octocat/repo', url: '' },
+					payload: {
+						action: 'opened',
+						pull_request: { node_id: 'pr-node-id', title: 'PR 제목' },
+					},
+					public: true,
+					created_at: '2026-09-28T12:00:00Z',
+				},
+			]);
+
+			// when
+			const result = await service.getActivities(
+				'access-token',
+				'octocat',
+				startedAt,
+				endedAt,
+			);
+
+			// then
+			expect(result).toEqual([
+				expect.objectContaining({
+					type: GitActivityTypeEnum.PULL_REQUEST,
+					summary: 'PR 제목',
+					repoName: 'octocat/repo',
+					githubNodeId: 'pr-node-id',
+					activityAt: new Date('2026-09-28T12:00:00Z'),
+				}),
+			]);
+		});
+
+		it('PullRequestReviewEvent(created)를 CODE_REVIEW 활동으로 반환한다', async () => {
+			// given
+			mockEventsResponse([
+				{
+					id: '4',
+					type: 'PullRequestReviewEvent',
+					repo: { id: 1, name: 'octocat/repo', url: '' },
+					payload: {
+						action: 'created',
+						pull_request: { title: 'PR 제목' },
+						review: { node_id: 'review-node-id' },
+					},
+					public: true,
+					created_at: '2026-09-28T13:00:00Z',
+				},
+			]);
+
+			// when
+			const result = await service.getActivities(
+				'access-token',
+				'octocat',
+				startedAt,
+				endedAt,
+			);
+
+			// then
+			expect(result).toEqual([
+				expect.objectContaining({
+					type: GitActivityTypeEnum.CODE_REVIEW,
+					summary: 'PR 제목',
+					repoName: 'octocat/repo',
+					githubNodeId: 'review-node-id',
+					activityAt: new Date('2026-09-28T13:00:00Z'),
+				}),
+			]);
+		});
+
+		it('[startedAt, endedAt) 범위 밖 이벤트와 관심 없는 이벤트 타입은 제외한다', async () => {
+			// given
+			mockEventsResponse([
+				{
+					id: '5',
+					type: 'IssuesEvent',
+					repo: { id: 1, name: 'octocat/repo', url: '' },
+					payload: {
+						action: 'opened',
+						issue: { node_id: 'before-range', title: '범위 이전' },
+					},
+					public: true,
+					created_at: '2026-09-27T23:59:59Z',
+				},
+				{
+					id: '6',
+					type: 'IssuesEvent',
+					repo: { id: 1, name: 'octocat/repo', url: '' },
+					payload: {
+						action: 'opened',
+						issue: { node_id: 'after-range', title: '범위 이후' },
+					},
+					public: true,
+					created_at: '2026-09-29T00:00:00Z',
+				},
+				{
+					id: '7',
+					type: 'WatchEvent',
+					repo: { id: 1, name: 'octocat/repo', url: '' },
+					payload: {},
+					public: true,
+					created_at: '2026-09-28T10:00:00Z',
+				},
+			]);
+
+			// when
+			const result = await service.getActivities(
+				'access-token',
+				'octocat',
+				startedAt,
+				endedAt,
+			);
+
+			// then
+			expect(result).toEqual([]);
+		});
+
+		it('GitHub API 실패 시 에러를 그대로 전파한다', async () => {
+			// given
+			fetchMock.mockResolvedValueOnce(
+				new Response(JSON.stringify({ message: 'Requires authentication' }), {
+					status: 401,
+					headers: { 'content-type': 'application/json' },
+				}),
+			);
+
+			// when & then
+			await expect(
+				service.getActivities('access-token', 'octocat', startedAt, endedAt),
+			).rejects.toMatchObject({ status: 401 });
 		});
 	});
 });

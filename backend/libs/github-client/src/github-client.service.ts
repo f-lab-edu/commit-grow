@@ -1,4 +1,5 @@
 import { SystemException } from '@app/common/exception/SystemException';
+import { GitActivityTypeEnum } from '@app/entity/enums/GitActivityTypeEnum';
 import { Environment } from '@app/environment/schema/Environment';
 import { OAuthGithubEnvironment } from '@app/environment/schema/OAuthGithubEnvironment';
 import { Injectable } from '@nestjs/common';
@@ -6,6 +7,15 @@ import { ConfigService } from '@nestjs/config';
 import { IsNotEmpty, IsString, validateSync } from 'class-validator';
 import { Logger } from 'nestjs-pino';
 import { Octokit } from 'octokit';
+import { GitActivityDto } from './GitActivity.dto';
+
+interface GithubActivityEventPayload {
+	action?: string;
+	commits?: { sha: string; message: string }[];
+	issue?: { node_id: string; title: string };
+	pull_request?: { node_id: string; title: string };
+	review?: { node_id: string };
+}
 
 @Injectable()
 export class GithubClientService {
@@ -16,7 +26,9 @@ export class GithubClientService {
 	@IsNotEmpty()
 	@IsString()
 	private readonly clientSecret: string;
+
 	private readonly otokit: Octokit;
+
 	private readonly basicAuthorizationHeader: string;
 
 	constructor(
@@ -56,6 +68,93 @@ export class GithubClientService {
 			this.logger.error('토큰 무효화를 실패했습니다.', { error });
 			throw error;
 		}
+	}
+
+	async getActivities(
+		accessToken: string,
+		username: string,
+		startedAt: Date,
+		endedAt: Date,
+	): Promise<GitActivityDto[]> {
+		const { data: events } = await this.otokit.rest.activity.listPublicEventsForUser(
+			{
+				username,
+				headers: { authorization: `token ${accessToken}` },
+			},
+		);
+
+		const activities: GitActivityDto[] = [];
+		for (const event of events) {
+			if (!event.created_at) {
+				continue;
+			}
+			const activityAt = new Date(event.created_at);
+			if (activityAt < startedAt || activityAt >= endedAt) {
+				continue;
+			}
+
+			const repoName = event.repo.name;
+			const payload = event.payload as unknown as GithubActivityEventPayload;
+
+			if (event.type === 'PushEvent') {
+				for (const commit of payload.commits ?? []) {
+					activities.push(
+						new GitActivityDto(
+							GitActivityTypeEnum.COMMIT,
+							commit.message,
+							repoName,
+							activityAt,
+							commit.sha,
+						),
+					);
+				}
+			} else if (
+				event.type === 'IssuesEvent' &&
+				payload.action === 'opened' &&
+				payload.issue
+			) {
+				activities.push(
+					new GitActivityDto(
+						GitActivityTypeEnum.ISSUE,
+						payload.issue.title,
+						repoName,
+						activityAt,
+						payload.issue.node_id,
+					),
+				);
+			} else if (
+				event.type === 'PullRequestEvent' &&
+				payload.action === 'opened' &&
+				payload.pull_request
+			) {
+				activities.push(
+					new GitActivityDto(
+						GitActivityTypeEnum.PULL_REQUEST,
+						payload.pull_request.title,
+						repoName,
+						activityAt,
+						payload.pull_request.node_id,
+					),
+				);
+			} else if (
+				event.type === 'PullRequestReviewEvent' &&
+				payload.action === 'created' &&
+				payload.pull_request &&
+				payload.review
+			) {
+				activities.push(
+					new GitActivityDto(
+						GitActivityTypeEnum.CODE_REVIEW,
+						payload.pull_request.title,
+						repoName,
+						activityAt,
+						payload.review.node_id,
+					),
+				);
+			}
+		}
+
+		return activities;
 	}
 
 	private validate() {
