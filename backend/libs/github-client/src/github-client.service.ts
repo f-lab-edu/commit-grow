@@ -16,8 +16,6 @@ import { GithubPushEventPayloadDto } from './dto/activity/GithubPushEventPayload
 import { GithubEventType } from './enum/GithubEventType';
 
 const WINDOW_SIZE = 3;
-// ponytail: 부분 실패를 허용하면 "마지막 페이지가 비었는지" 종료 신호를
-// 계속 못 얻어 무한정 다음 window로 넘어갈 수 있어 반복 상한을 둔다.
 const MAX_WINDOW_COUNT = 10;
 
 type EventsPageResponse = Awaited<
