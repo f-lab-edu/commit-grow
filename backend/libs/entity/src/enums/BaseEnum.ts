@@ -1,5 +1,6 @@
 export abstract class BaseEnum<_T extends BaseEnum<_T>> {
 	readonly name: string;
+
 	readonly label: string;
 
 	protected constructor(name: string, label: string) {
@@ -26,5 +27,16 @@ export abstract class BaseEnum<_T extends BaseEnum<_T>> {
 			throw new Error(`존재하지 않는 값입니다. value=${name}`);
 		}
 		return found;
+	}
+
+	static valueOfOrUndefined<T extends BaseEnum<T>>(
+		this: { prototype: T } & { values(): readonly T[] },
+		name: string,
+	): T | undefined {
+		return this.values().find((v) => v.name === name);
+	}
+
+	isEqaul(other: _T): boolean {
+		return this.name === other.name;
 	}
 }

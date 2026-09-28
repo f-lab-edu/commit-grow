@@ -1,5 +1,4 @@
 import { SystemException } from '@app/common/exception/SystemException';
-import { GitActivityTypeEnum } from '@app/entity/enums/GitActivityTypeEnum';
 import { Environment } from '@app/environment/schema/Environment';
 import { OAuthGithubEnvironment } from '@app/environment/schema/OAuthGithubEnvironment';
 import { Temporal } from '@js-temporal/polyfill';
@@ -8,14 +7,20 @@ import { ConfigService } from '@nestjs/config';
 import { IsNotEmpty, IsString, validateSync } from 'class-validator';
 import { Logger } from 'nestjs-pino';
 import { Octokit } from 'octokit';
-import { GitActivityDto } from './GitActivity.dto';
+import { GitActivityDto } from './dto/activity/GitActivity.dto';
+import { GithubEventResponseDto } from './dto/activity/GithubEventResponseDto';
+import { GithubIssuesEventPayloadDto } from './dto/activity/GithubIssuesEventPayload.dto';
+import { GithubPullRequestEventPayloadDto } from './dto/activity/GithubPullRequestEventPayload.dto';
+import { GithubPullRequestReviewEventPayloadDto } from './dto/activity/GithubPullRequestReviewEventPayload.dto';
+import { GithubPushEventPayloadDto } from './dto/activity/GithubPushEventPayload.dto';
+import { GithubEventType } from './enum/GithubEventType';
 
 interface GithubActivityEventPayload {
 	action?: string;
-	commits?: { sha: string; message: string }[];
-	issue?: { node_id: string; title: string };
-	pull_request?: { node_id: string; title: string };
-	review?: { node_id: string };
+	commits?: { sha?: string; message?: string }[];
+	issue?: { node_id?: string; title?: string };
+	pull_request?: { node_id?: string; title?: string };
+	review?: { node_id?: string };
 }
 
 @Injectable()
@@ -76,89 +81,98 @@ export class GithubClientService {
 		username: string,
 		startedAt: Temporal.Instant,
 		endedAt: Temporal.Instant,
-	): Promise<GitActivityDto[]> {
-		const { data: events } = await this.otokit.rest.activity.listPublicEventsForUser(
-			{
+	): Promise<GitActivityDto> {
+		const resultDto = new GitActivityDto();
+		const { data: events } =
+			await this.otokit.rest.activity.listPublicEventsForUser({
 				username,
 				headers: { authorization: `token ${accessToken}` },
-			},
-		);
+			});
 
-		const activities: GitActivityDto[] = [];
-		for (const event of events) {
-			if (!event.created_at) {
-				continue;
-			}
-			const activityAt = Temporal.Instant.from(event.created_at);
-			if (
-				Temporal.Instant.compare(activityAt, startedAt) < 0 ||
-				Temporal.Instant.compare(activityAt, endedAt) >= 0
-			) {
-				continue;
-			}
-
-			const repoName = event.repo.name;
-			const payload = event.payload as unknown as GithubActivityEventPayload;
-
-			if (event.type === 'PushEvent') {
-				for (const commit of payload.commits ?? []) {
-					activities.push(
-						new GitActivityDto(
-							GitActivityTypeEnum.COMMIT,
-							commit.message,
-							repoName,
-							activityAt,
-							commit.sha,
-						),
-					);
+		const eventDtos: GithubEventResponseDto[] = events
+			.map((rawEvent) => {
+				const eventDto = GithubEventResponseDto.of(rawEvent);
+				if (!eventDto.type) {
+					return null;
 				}
-			} else if (
-				event.type === 'IssuesEvent' &&
-				payload.action === 'opened' &&
-				payload.issue
+				if (this.hasValidationError(eventDto, eventDto.type.name)) {
+					return null;
+				}
+				const activityAt = Temporal.Instant.from(eventDto.createdAt);
+				if (
+					Temporal.Instant.compare(activityAt, startedAt) < 0 ||
+					Temporal.Instant.compare(activityAt, endedAt) >= 0
+				) {
+					return null;
+				}
+
+				return eventDto;
+			})
+			.filter(
+				(v: GithubEventResponseDto | null): v is GithubEventResponseDto =>
+					v !== null,
+			);
+
+		for (const eventDto of eventDtos) {
+			const rawPayload =
+				eventDto.payload as unknown as GithubActivityEventPayload;
+
+			if (eventDto.type === GithubEventType.PUSH) {
+				const pushPayload = GithubPushEventPayloadDto.of(rawPayload);
+				if (this.hasValidationError(pushPayload, eventDto.type.name)) {
+					continue;
+				}
+				resultDto.addByPushPayload(pushPayload, eventDto);
+			}
+
+			if (
+				eventDto.type === GithubEventType.ISSUES &&
+				rawPayload.action === 'opened'
 			) {
-				activities.push(
-					new GitActivityDto(
-						GitActivityTypeEnum.ISSUE,
-						payload.issue.title,
-						repoName,
-						activityAt,
-						payload.issue.node_id,
-					),
-				);
-			} else if (
-				event.type === 'PullRequestEvent' &&
-				payload.action === 'opened' &&
-				payload.pull_request
+				const issuesPayload = GithubIssuesEventPayloadDto.of(rawPayload);
+				if (this.hasValidationError(issuesPayload, eventDto.type.name)) {
+					continue;
+				}
+				resultDto.addByIssuesPayload(issuesPayload, eventDto);
+			}
+
+			if (
+				eventDto.type === GithubEventType.PULL_REQUEST &&
+				rawPayload.action === 'opened'
 			) {
-				activities.push(
-					new GitActivityDto(
-						GitActivityTypeEnum.PULL_REQUEST,
-						payload.pull_request.title,
-						repoName,
-						activityAt,
-						payload.pull_request.node_id,
-					),
-				);
-			} else if (
-				event.type === 'PullRequestReviewEvent' &&
-				payload.action === 'created' &&
-				payload.pull_request &&
-				payload.review
+				const pullRequestPayload =
+					GithubPullRequestEventPayloadDto.of(rawPayload);
+				if (this.hasValidationError(pullRequestPayload, eventDto.type.name)) {
+					continue;
+				}
+				resultDto.addByPullRequestPayload(pullRequestPayload, eventDto);
+			}
+
+			if (
+				eventDto.type === GithubEventType.PULL_REQUEST_REVIEW &&
+				rawPayload.action === 'created'
 			) {
-				activities.push(
-					new GitActivityDto(
-						GitActivityTypeEnum.CODE_REVIEW,
-						payload.pull_request.title,
-						repoName,
-						activityAt,
-						payload.review.node_id,
-					),
-				);
+				const reviewPayload =
+					GithubPullRequestReviewEventPayloadDto.of(rawPayload);
+				if (this.hasValidationError(reviewPayload, eventDto.type.name)) {
+					continue;
+				}
+				resultDto.addByPullRequestReviewPayload(reviewPayload, eventDto);
 			}
 		}
 
-		return activities;
+		return resultDto;
+	}
+
+	private hasValidationError(payload: object, eventType: string): boolean {
+		const validationErrors = validateSync(payload);
+		if (validationErrors.length > 0) {
+			this.logger.error(`${eventType} payload 검증에 실패했습니다.`, {
+				validationErrors,
+			});
+			return true;
+		}
+		return false;
 	}
 
 	private validate() {
@@ -166,7 +180,8 @@ export class GithubClientService {
 		if (validateErrors.length > 0) {
 			throw new SystemException(
 				'github client 인스턴스 생성중 에러가 발생하였습니다.',
-				validateErrors,
+				'github client 인스턴스 생성중 에러가 발생하였습니다.',
+				{ validateErrors },
 			);
 		}
 	}
