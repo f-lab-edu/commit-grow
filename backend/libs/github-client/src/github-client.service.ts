@@ -15,6 +15,9 @@ import { GithubPullRequestReviewEventPayloadDto } from './dto/activity/GithubPul
 import { GithubPushEventPayloadDto } from './dto/activity/GithubPushEventPayload.dto';
 import { GithubEventType } from './enum/GithubEventType';
 
+const WINDOW_SIZE = 3;
+const MAX_WINDOW_COUNT = 2;
+
 interface GithubActivityEventPayload {
 	action?: string;
 	commits?: { sha?: string; message?: string }[];
@@ -141,19 +144,12 @@ export class GithubClientService {
 		return resultDto;
 	}
 
-	// window(3페이지) 단위로 동시 요청한다. GitHub 이벤트는 최신순 정렬이라
-	// startedAt보다 오래된 유효 이벤트를 만나면 그 뒤는 볼 필요가 없으므로
-	// 다음 window 요청 자체를 하지 않는다.
 	private async fetchEventDtosInRange(
 		accessToken: string,
 		username: string,
 		startedAt: Temporal.Instant,
 		endedAt: Temporal.Instant,
 	): Promise<GithubEventResponseDto[]> {
-		const WINDOW_SIZE = 3;
-		// ponytail: 부분 실패를 허용하면 "마지막 페이지가 비었는지" 종료 신호를
-		// 계속 못 얻어 무한정 다음 window로 넘어갈 수 있어 반복 상한을 둔다.
-		const MAX_WINDOW_COUNT = 10;
 		const eventDtos: GithubEventResponseDto[] = [];
 
 		const fetchPage = (pageNumber: number) =>
@@ -231,7 +227,10 @@ export class GithubClientService {
 			}
 
 			const lastResult = settledResponses[settledResponses.length - 1];
-			if (lastResult.status === 'fulfilled' && lastResult.value.data.length === 0) {
+			if (
+				lastResult.status === 'fulfilled' &&
+				lastResult.value.data.length === 0
+			) {
 				reachedBoundary = true;
 			}
 
