@@ -43,7 +43,7 @@
 			"correctness": {
 				"noBeforeInteractiveScriptOutsideDocument": "warn",
 				"noNextAsyncClientComponent": "warn",
-				"noUnusedVariables": "error",
+				"noUnusedVariables": "off",
 				"useInlineScriptId": "error"
 			},
 			"performance": {

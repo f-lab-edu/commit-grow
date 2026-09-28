@@ -1,3 +1,4 @@
+import sortClassMembers from "eslint-plugin-sort-class-members";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
@@ -8,27 +9,38 @@ export default tseslint.config(
 		files: ["**/*.ts", "**/*.tsx"],
 		plugins: {
 			"@typescript-eslint": tseslint.plugin,
+			"sort-class-members": sortClassMembers,
 		},
 		languageOptions: {
 			parser: tseslint.parser,
-			parserOptions: {
-				project: "./tsconfig.json",
-				tsconfigRootDir: import.meta.dirname,
-			},
 		},
 		rules: {
-			"@typescript-eslint/member-ordering": [
+			"lines-between-class-members": [
+				"error",
+				"always",
+				{ exceptAfterSingleLine: false },
+			],
+			"sort-class-members/sort-class-members": [
 				"error",
 				{
-					default: [
-						"field",
+					order: [
+						{ type: "property" },
 						"constructor",
-						"static-method",
-						"public-method",
-						"private-method",
-						"get",
-						"set",
+						{ type: "method", static: true, kind: "nonAccessor" },
+						{
+							type: "method",
+							accessibility: "public",
+							kind: "nonAccessor",
+						},
+						{
+							type: "method",
+							accessibility: "private",
+							kind: "nonAccessor",
+						},
+						{ kind: "get" },
+						{ kind: "set" },
 					],
+					accessorPairPositioning: "getThenSet",
 				},
 			],
 		},

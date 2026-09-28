@@ -1,12 +1,14 @@
-# Biome + typescript-eslint(member-ordering) 병행 Plan
+# Biome + ESLint(class member 순서 autofix) 병행 Plan
 
-**Goal:** class 멤버 순서(필드 → 생성자 → static 메서드 → public 메서드 → private 메서드 → getter/setter)를 강제하는 ESLint `member-ordering` 규칙을 Biome 포맷터/린터와 병행 적용.
+**Goal:** class 멤버 순서(필드 → 생성자 → static 메서드 → public 메서드 → private 메서드 → getter/setter)를 강제 + 저장 시 자동 재배치.
 
-**Architecture:** Biome은 기존처럼 포맷터+대부분 린트 담당 유지. ESLint는 `member-ordering` 규칙 하나만 켜서 순서 검사만 전담 (다른 규칙 전부 off → Biome과 판정 중복/충돌 방지). VSCode는 저장 시 Biome fix-all + ESLint quickfix 병행.
+**Architecture:** Biome은 기존처럼 포맷터+대부분 린트 담당 유지. ESLint는 순서 검사/autofix 하나만 전담 (다른 규칙 전부 off → Biome과 판정 중복/충돌 방지). VSCode는 저장 시 Biome fix-all(포맷) + ESLint fix-all(재배치) 병행.
 
-**Tech Stack:** eslint, typescript-eslint (flat config)
+**Tech Stack:** eslint, typescript-eslint, eslint-plugin-sort-class-members (flat config)
 
-**Order 확정:** `field → constructor → static-method → public-method → private-method → get → set` (getter/setter는 배열 끝에 붙여서 같은 그룹으로 취급)
+**규칙 선정 경위:** 처음엔 `@typescript-eslint/member-ordering` 사용 — 근데 이 규칙은 **autofix 미지원**(`--fix` 돌려도 그대로, 감지만 함). 저장 시 자동 재배치까지 원해서 `eslint-plugin-sort-class-members`(`fixable: 'code'`, 실제 fix 함수 있음)로 교체.
+
+**Order 확정:** `property → constructor → static method(nonAccessor) → public method(nonAccessor) → private method(nonAccessor) → get → set`, `accessorPairPositioning: "getThenSet"`
 
 ---
 

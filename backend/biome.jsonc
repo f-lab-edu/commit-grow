@@ -34,7 +34,7 @@
 			},
 			// 정확성 관련 규칙
 			"correctness": {
-				"noUnusedVariables": "info", // 사용하지 않는 변수 금지 - _변수명으로 바뀌어서 info 로 변경
+				"noUnusedVariables": "off", // 사용하지 않는 변수 금지 - _변수명 자동 추가 fix 때문에 off
 				"noUnusedImports": "error" // 사용하지 않는 모듈 금지
 			},
 			// 실험적(nursery) 규칙 — 아직 안정화 전, 향후 변경 가능
