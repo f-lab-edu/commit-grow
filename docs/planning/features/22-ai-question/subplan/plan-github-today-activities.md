@@ -142,16 +142,10 @@
   - `getActivities()`의 이벤트 조회를 단건 호출 → window(3페이지 동시 `Promise.all`) 반복 루프로 교체, 각 요청에 `request: { signal: AbortSignal.timeout(1000) }` 추가
 - Test: `backend/libs/github-client/src/github-client.service.spec.ts` — window(3페이지) 동시 요청/조기중단/데이터소진 시나리오 테스트 추가
 
-- [ ] **Step 1: 실패하는 테스트 작성**
+- [x] **Step 1: 실패하는 테스트 작성** — window 마지막 페이지 빈 배열(데이터 소진, 호출 3회) / window 전부 유효 + 다음 window의 첫 페이지에서 경계 도달(호출 6회, 3번째 window 요청 안 함) 2개 시나리오. 기존 `mockEventsResponse` 헬퍼도 window(3페이지 동시요청)에 맞춰 첫 페이지만 이벤트 주고 나머지 두 페이지는 빈 배열로 채우도록 수정. `retries`/타임아웃은 라이브러리가 보장하는 단순 설정값 전달이라 별도 유닛 테스트 없이 구현만 반영(기존 401 테스트도 재시도 지연 피하려고 일부러 no-retry 상태코드를 쓰는 것과 같은 판단)
+- [x] **Step 2: 테스트 실행해서 실패 확인** — 신규 테스트 2개 실패(호출 횟수 불일치), 기존 13개는 헬퍼 변경에도 그대로 통과
+- [x] **Step 3: 최소 구현 작성** — `getActivities()`의 단건 호출 부분을 `fetchEventDtosInRange()` 헬퍼로 분리, `while` 루프 안에서 `[page, page+1, page+2]`를 `Promise.all`로 동시 요청. `endedAt` 이상은 skip, `startedAt` 미만인 유효 이벤트를 만나면 `reachedBoundary` 플래그로 루프 종료, window 마지막 페이지가 빈 배열이면 그것도 종료 조건. Octokit 생성자에 `retry: { retries: 2 }`, 각 요청에 `request: { signal: AbortSignal.timeout(1000) }` 추가
+- [x] **Step 4: 테스트 실행해서 통과 확인** — 15개 전부 통과, eslint/biome/tsc 클린
+- [x] **Step 5: 커밋**
 
-개요: (1) window 1(page 1,2,3) 전부 range 안 + window 2(page 4,5,6)에서 4번째 페이지가 range 밖 이벤트 포함 → 결과는 window1+window2 유효분 합쳐지고 window 3(7,8,9)는 요청 안 함(`fetchMock` 호출 횟수로 검증: 6회), (2) window 1의 3페이지 중 마지막 페이지가 빈 배열(데이터 소진) → 경계 못 만나도 종료하고 다음 window 요청 안 함(호출 횟수 3회), (3) `retries: 2`/타임아웃 설정이 실제 요청에 반영되는지(기존 revokeAccessToken 401 재시도 테스트 참고해 필요시 확인)
-
-- [ ] **Step 2: 테스트 실행해서 실패 확인**
-
-- [ ] **Step 3: 최소 구현 작성**
-
-개요: `page` 변수를 3씩 증가시키며 `while` 루프, 매 반복마다 `[page, page+1, page+2]`를 `listPublicEventsForUser`로 `Promise.all` 동시 요청. 이벤트별 검증/파싱은 기존 로직 재사용해 `eventDtos`에 누적하되 `startedAt`보다 오래된 유효 이벤트를 만나면 `reachedBoundary` 플래그로 표시하고 루프 종료. window의 마지막 페이지가 빈 배열이면(더 이상 데이터 없음) 그것도 종료 조건.
-
-- [ ] **Step 4: 테스트 실행해서 통과 확인** — 기존 13개 + 신규 페이지네이션 테스트 전부 통과 확인
-
-- [ ] **Step 5: 커밋**
+**후속 반영(사용자 피드백)**: `Promise.all`은 window 3개 중 하나라도 실패하면 전체가 reject돼서 성공한 페이지 결과까지 날아감 — `Promise.allSettled`로 교체해 실패한 페이지는 로그만 남기고 성공한 페이지만으로 계속 진행하도록 수정. 단, window 3개가 전부 실패하면 기존처럼(이슈 32 정책) 첫 실패 사유를 그대로 throw(승인 완료, 기존 "API 실패 시 전파" 테스트 그대로 유지). 부분 실패 허용으로 "마지막 페이지 빈 배열" 종료 신호를 계속 못 받을 가능성이 생겨 `MAX_WINDOW_COUNT=10` 반복 상한을 `ponytail:` 주석으로 추가. 부분 실패 시나리오 테스트 1개 추가(16개 전부 통과)
