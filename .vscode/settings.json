@@ -1,5 +1,13 @@
 {
 	"git.ignoreLimitWarning": true,
 	"css.lint.unknownProperties": "ignore",
-	"css.lint.unknownAtRules": "ignore"
+	"css.lint.unknownAtRules": "ignore",
+	"editor.defaultFormatter": "biomejs.biome",
+	"editor.formatOnSave": true,
+	"editor.codeActionsOnSave": {
+		"source.fixAll.biome": "explicit",
+		"quickfix.eslint": "explicit"
+	},
+	"eslint.workingDirectories": ["backend", "frontend"],
+	"eslint.rules.customizations": [{ "rule": "*", "severity": "off" }]
 }
