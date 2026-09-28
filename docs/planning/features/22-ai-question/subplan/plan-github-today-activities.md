@@ -109,4 +109,49 @@
 
 - [x] 테스트 전체를 집계 객체 형태(`expect.objectContaining({ commits: [...], issues: [...], ... })`)로 재작성, 12개 전부 통과
 - [x] eslint/biome 클린, github-client + entity + api 전체 tsc 클린(무관한 pre-existing 에러 1건 제외)
-- [ ] **커밋**
+- [x] **커밋**
+
+---
+
+## Task 5: code-review 반영 (PR #34 생성 전)
+
+`/code-review medium` 실행 결과 반영:
+
+- `new Octokit({ request: { fetch: {} } })`(동시편집 중 실수로 들어간 코드)가 전체 요청을 깨뜨려서 원복
+- `Temporal.Instant.from(eventDto.createdAt)`이 try/catch 없이 호출돼서, 비어있진 않지만 파싱 불가능한 날짜 문자열이면 전체 `getActivities()` 호출이 통째로 reject되던 문제 — try/catch로 감싸서 해당 이벤트만 로그 남기고 skip하도록 수정, 테스트 추가(13개)
+- `BaseEnum.valueOf()`가 `valueOfOrUndefined()`의 find 로직을 재사용하도록 중복 제거
+- 페이지네이션 미지원 범위를 `ponytail:` 주석으로 명시
+- `ToBaseEnum.ts`/`ToTemporalInstant.ts`/`BaseEnum.isEqaul()`(안 쓰는 코드로 지적됨)는 향후 `plainToInstance` 전환용 스케폴드로 유지하기로 결정(삭제 안 함)
+
+- [x] 수정 + 테스트 통과(13개) 확인, PR #34 생성
+
+---
+
+## Task 6: 페이지네이션 추가(window 방식 동시 요청)
+
+**Goal:** `getActivities()`가 GitHub 이벤트를 3페이지씩 묶은 window 단위로 동시 요청하며, range 경계(`startedAt`보다 오래된 이벤트)에 도달하거나 더 이상 데이터가 없으면 다음 window 요청을 멈추도록 변경. 재시도 2회, 요청당 타임아웃 1000ms 추가.
+
+**Spec:** 브레인스토밍 결과(사용자 승인) — 순차 조기종료(page-by-page) 대신, 처음부터 `page 1,2,3`을 `Promise.all`로 동시 요청 → 병합 후 range 경계 검사 → 아직 경계 미도달이면 다음 window(`4,5,6`)를 또 동시 요청, 반복. 오늘 활동처럼 대부분 1페이지로 끝나는 경우 평소엔 2페이지가 낭비되는 트레이드오프를 감수하고 레이턴시를 우선(사용자 확인 완료).
+
+---
+
+**Files:**
+
+- Modify: `backend/libs/github-client/src/github-client.service.ts`:
+  - Octokit 생성자에 `retry: { retries: 2 }` 추가
+  - `getActivities()`의 이벤트 조회를 단건 호출 → window(3페이지 동시 `Promise.all`) 반복 루프로 교체, 각 요청에 `request: { signal: AbortSignal.timeout(1000) }` 추가
+- Test: `backend/libs/github-client/src/github-client.service.spec.ts` — window(3페이지) 동시 요청/조기중단/데이터소진 시나리오 테스트 추가
+
+- [ ] **Step 1: 실패하는 테스트 작성**
+
+개요: (1) window 1(page 1,2,3) 전부 range 안 + window 2(page 4,5,6)에서 4번째 페이지가 range 밖 이벤트 포함 → 결과는 window1+window2 유효분 합쳐지고 window 3(7,8,9)는 요청 안 함(`fetchMock` 호출 횟수로 검증: 6회), (2) window 1의 3페이지 중 마지막 페이지가 빈 배열(데이터 소진) → 경계 못 만나도 종료하고 다음 window 요청 안 함(호출 횟수 3회), (3) `retries: 2`/타임아웃 설정이 실제 요청에 반영되는지(기존 revokeAccessToken 401 재시도 테스트 참고해 필요시 확인)
+
+- [ ] **Step 2: 테스트 실행해서 실패 확인**
+
+- [ ] **Step 3: 최소 구현 작성**
+
+개요: `page` 변수를 3씩 증가시키며 `while` 루프, 매 반복마다 `[page, page+1, page+2]`를 `listPublicEventsForUser`로 `Promise.all` 동시 요청. 이벤트별 검증/파싱은 기존 로직 재사용해 `eventDtos`에 누적하되 `startedAt`보다 오래된 유효 이벤트를 만나면 `reachedBoundary` 플래그로 표시하고 루프 종료. window의 마지막 페이지가 빈 배열이면(더 이상 데이터 없음) 그것도 종료 조건.
+
+- [ ] **Step 4: 테스트 실행해서 통과 확인** — 기존 13개 + 신규 페이지네이션 테스트 전부 통과 확인
+
+- [ ] **Step 5: 커밋**
