@@ -18,6 +18,13 @@ import { GithubEventType } from './enum/GithubEventType';
 const WINDOW_SIZE = 3;
 const MAX_WINDOW_COUNT = 2;
 
+type EventsPageResponse = Awaited<
+	ReturnType<
+		InstanceType<typeof Octokit>['rest']['activity']['listPublicEventsForUser']
+	>
+>;
+type RawGithubEvent = EventsPageResponse['data'][number];
+
 interface GithubActivityEventPayload {
 	action?: string;
 	commits?: { sha?: string; message?: string }[];
@@ -177,67 +184,115 @@ export class GithubClientService {
 				pageNumbers.map((pageNumber) => fetchPage(pageNumber)),
 			);
 
-			const fulfilledResponses: Awaited<ReturnType<typeof fetchPage>>[] = [];
-			settledResponses.forEach((settled, index) => {
-				if (settled.status === 'fulfilled') {
-					fulfilledResponses.push(settled.value);
-					return;
-				}
-				this.logger.error('GitHub 활동 페이지 조회에 실패했습니다.', {
-					page: pageNumbers[index],
-					error: settled.reason,
-				});
-			});
+			const fulfilledResponses = this.extractFulfilledResponses(
+				settledResponses,
+				pageNumbers,
+			);
+			const windowResult = this.collectEventsInWindow(
+				fulfilledResponses,
+				startedAt,
+				endedAt,
+			);
 
-			if (fulfilledResponses.length === 0) {
-				throw (settledResponses[0] as PromiseRejectedResult).reason;
-			}
-
-			for (const { data: events } of fulfilledResponses) {
-				for (const rawEvent of events) {
-					const eventDto = GithubEventResponseDto.of(rawEvent);
-					if (!eventDto.type) {
-						continue;
-					}
-					if (this.hasValidationError(eventDto, eventDto.type.name)) {
-						continue;
-					}
-
-					let activityAt: Temporal.Instant;
-					try {
-						activityAt = Temporal.Instant.from(eventDto.createdAt);
-					} catch (error) {
-						this.logger.error('GithubEvent createdAt 파싱에 실패했습니다.', {
-							createdAt: eventDto.createdAt,
-							error,
-						});
-						continue;
-					}
-
-					if (Temporal.Instant.compare(activityAt, endedAt) >= 0) {
-						continue;
-					}
-					if (Temporal.Instant.compare(activityAt, startedAt) < 0) {
-						reachedBoundary = true;
-						continue;
-					}
-
-					eventDtos.push(eventDto);
-				}
-			}
-
-			const lastResult = settledResponses[settledResponses.length - 1];
-			if (
-				lastResult.status === 'fulfilled' &&
-				lastResult.value.data.length === 0
-			) {
-				reachedBoundary = true;
-			}
+			eventDtos.push(...windowResult.eventDtos);
+			reachedBoundary =
+				windowResult.reachedBoundary ||
+				this.isLastPageEmpty(settledResponses);
 
 			page += WINDOW_SIZE;
 		}
 
 		return eventDtos;
+	}
+
+	private extractFulfilledResponses(
+		settledResponses: PromiseSettledResult<EventsPageResponse>[],
+		pageNumbers: number[],
+	): EventsPageResponse[] {
+		const fulfilledResponses: EventsPageResponse[] = [];
+		settledResponses.forEach((settled, index) => {
+			if (settled.status === 'fulfilled') {
+				fulfilledResponses.push(settled.value);
+				return;
+			}
+			this.logger.error('GitHub 활동 페이지 조회에 실패했습니다.', {
+				page: pageNumbers[index],
+				error: settled.reason,
+			});
+		});
+
+		if (fulfilledResponses.length === 0) {
+			throw (settledResponses[0] as PromiseRejectedResult).reason;
+		}
+
+		return fulfilledResponses;
+	}
+
+	private isLastPageEmpty(
+		settledResponses: PromiseSettledResult<EventsPageResponse>[],
+	): boolean {
+		const lastResult = settledResponses.at(-1);
+		return (
+			lastResult?.status === 'fulfilled' && lastResult.value.data.length === 0
+		);
+	}
+
+	private collectEventsInWindow(
+		fulfilledResponses: EventsPageResponse[],
+		startedAt: Temporal.Instant,
+		endedAt: Temporal.Instant,
+	): { eventDtos: GithubEventResponseDto[]; reachedBoundary: boolean } {
+		const eventDtos: GithubEventResponseDto[] = [];
+		let reachedBoundary = false;
+
+		for (const { data: events } of fulfilledResponses) {
+			for (const rawEvent of events) {
+				const parsed = this.parseEventInRange(rawEvent, startedAt, endedAt);
+				if (parsed === 'boundary') {
+					reachedBoundary = true;
+					continue;
+				}
+				if (parsed) {
+					eventDtos.push(parsed);
+				}
+			}
+		}
+
+		return { eventDtos, reachedBoundary };
+	}
+
+	private parseEventInRange(
+		rawEvent: RawGithubEvent,
+		startedAt: Temporal.Instant,
+		endedAt: Temporal.Instant,
+	): GithubEventResponseDto | 'boundary' | null {
+		const eventDto = GithubEventResponseDto.of(rawEvent);
+		if (!eventDto.type) {
+			return null;
+		}
+		if (this.hasValidationError(eventDto, eventDto.type.name)) {
+			return null;
+		}
+
+		let activityAt: Temporal.Instant;
+		try {
+			activityAt = Temporal.Instant.from(eventDto.createdAt);
+		} catch (error) {
+			this.logger.error('GithubEvent createdAt 파싱에 실패했습니다.', {
+				createdAt: eventDto.createdAt,
+				error,
+			});
+			return null;
+		}
+
+		if (Temporal.Instant.compare(activityAt, endedAt) >= 0) {
+			return null;
+		}
+		if (Temporal.Instant.compare(activityAt, startedAt) < 0) {
+			return 'boundary';
+		}
+
+		return eventDto;
 	}
 
 	private hasValidationError(payload: object, eventType: string): boolean {
