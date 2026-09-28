@@ -119,6 +119,9 @@ function createValidGithubConfig(
 		clientId: 'test-client-id',
 		clientSecret: 'test-client-secret',
 		callbackURL: 'http://callbackURL',
+		maxRetries: 2,
+		eventsPerPage: 100,
+		requestTimeoutMs: 1000,
 		...overrides,
 	});
 }

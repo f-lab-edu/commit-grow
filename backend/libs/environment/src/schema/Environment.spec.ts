@@ -93,6 +93,9 @@ function createTestEnv() {
 			clientId: 'clientId',
 			clientSecret: 'clientSecret',
 			callbackURL: 'callbackURL',
+			maxRetries: 2,
+			eventsPerPage: 100,
+			requestTimeoutMs: 1000,
 		},
 		redis: {
 			host: 'localhost',
