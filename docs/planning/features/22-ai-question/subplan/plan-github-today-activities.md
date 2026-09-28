@@ -44,4 +44,20 @@
 
 - [x] **Step 4: 테스트 실행해서 통과 확인** — 10개 전부 통과, eslint/biome 클린(사전 존재하던 `validate()` 관련 tsc 에러 1건은 이번 변경과 무관, main에도 동일하게 존재)
 
+- [x] **Step 5: 커밋** — `docs: ...` + `feat(github-client): ...` (2개 커밋)
+
+---
+
+## Task 2: Date → Temporal.Instant 전환 + fetch mock 타입 개선
+
+**Goal:** `getActivities`의 시간 파라미터를 `Date`에서 `Temporal.Instant`로 교체하고, 테스트의 fetch mock을 `vitest-mock-extended`로 타입 안전하게 개선
+
+**Spec:** 브레인스토밍 결과(사용자 요청) — Task 1의 후속 개선
+
+- 추가 의존성: `@js-temporal/polyfill`(dependencies), `vitest-mock-extended@3.1.1`(devDependencies — vitest 3.x와 호환되는 버전으로 고정, 최신 5.x는 vitest >=4.0.0 요구해서 설치 불가했음)
+- `GitActivityDto.activityAt`, `getActivities`의 `startedAt`/`endedAt`: `Date` → `Temporal.Instant`
+- 범위 비교: `Temporal.Instant.compare()` 정적 메서드 사용(연산자 비교 불가)
+- spec.ts: `fetchMock = vi.fn()` → `fetchMock = mockFn<typeof fetch>()`로 교체해 `fetch(input, init)` 인자/응답 타입 체크 활성화. 이 과정에서 `requestInit.headers.authorization` 직접 접근이 타입 에러가 나서 `new Headers(requestInit?.headers).get('authorization')`로 수정(HeadersInit이 여러 형태를 허용하는 유니온이라 정규화 필요) — Octokit을 mock하지 않고 fetch만 mock하는 기존 전략(헤더 병합 버그를 실제 요청 조립 로직으로 잡기 위함)은 그대로 유지
+
+- [x] **Step 1~4: TDD로 테스트/구현 동시 치환** — 기존 테스트를 Temporal 타입으로 다시 작성 → 컴파일 에러로 실패 확인 → 서비스/DTO 타입 교체 → 10개 전부 통과, eslint/biome 클린
 - [ ] **Step 5: 커밋**
