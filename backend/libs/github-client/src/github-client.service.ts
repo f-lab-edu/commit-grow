@@ -49,7 +49,7 @@ export class GithubClientService {
 			`${this.clientId}:${this.clientSecret}`,
 		).toString('base64')}`;
 
-		this.otokit = new Octokit();
+		this.otokit = new Octokit({ retry: { retries: 2 } });
 
 		this.validate();
 	}
@@ -83,46 +83,12 @@ export class GithubClientService {
 		endedAt: Temporal.Instant,
 	): Promise<GitActivityDto> {
 		const resultDto = new GitActivityDto();
-		// ponytail: 첫 페이지(기본 30건)만 조회. 기간 내 활동이 그보다 많은 극단
-		// 케이스가 발견되면 페이지네이션 추가
-		const { data: events } =
-			await this.otokit.rest.activity.listPublicEventsForUser({
-				username,
-				headers: { authorization: `token ${accessToken}` },
-			});
-
-		const eventDtos: GithubEventResponseDto[] = events
-			.map((rawEvent) => {
-				const eventDto = GithubEventResponseDto.of(rawEvent);
-				if (!eventDto.type) {
-					return null;
-				}
-				if (this.hasValidationError(eventDto, eventDto.type.name)) {
-					return null;
-				}
-				let activityAt: Temporal.Instant;
-				try {
-					activityAt = Temporal.Instant.from(eventDto.createdAt);
-				} catch (error) {
-					this.logger.error('GithubEvent createdAt 파싱에 실패했습니다.', {
-						createdAt: eventDto.createdAt,
-						error,
-					});
-					return null;
-				}
-				if (
-					Temporal.Instant.compare(activityAt, startedAt) < 0 ||
-					Temporal.Instant.compare(activityAt, endedAt) >= 0
-				) {
-					return null;
-				}
-
-				return eventDto;
-			})
-			.filter(
-				(v: GithubEventResponseDto | null): v is GithubEventResponseDto =>
-					v !== null,
-			);
+		const eventDtos = await this.fetchEventDtosInRange(
+			accessToken,
+			username,
+			startedAt,
+			endedAt,
+		);
 
 		for (const eventDto of eventDtos) {
 			const rawPayload =
@@ -173,6 +139,106 @@ export class GithubClientService {
 		}
 
 		return resultDto;
+	}
+
+	// window(3페이지) 단위로 동시 요청한다. GitHub 이벤트는 최신순 정렬이라
+	// startedAt보다 오래된 유효 이벤트를 만나면 그 뒤는 볼 필요가 없으므로
+	// 다음 window 요청 자체를 하지 않는다.
+	private async fetchEventDtosInRange(
+		accessToken: string,
+		username: string,
+		startedAt: Temporal.Instant,
+		endedAt: Temporal.Instant,
+	): Promise<GithubEventResponseDto[]> {
+		const WINDOW_SIZE = 3;
+		// ponytail: 부분 실패를 허용하면 "마지막 페이지가 비었는지" 종료 신호를
+		// 계속 못 얻어 무한정 다음 window로 넘어갈 수 있어 반복 상한을 둔다.
+		const MAX_WINDOW_COUNT = 10;
+		const eventDtos: GithubEventResponseDto[] = [];
+
+		const fetchPage = (pageNumber: number) =>
+			this.otokit.rest.activity.listPublicEventsForUser({
+				username,
+				page: pageNumber,
+				per_page: 100,
+				headers: { authorization: `token ${accessToken}` },
+				request: { signal: AbortSignal.timeout(1000) },
+			});
+
+		let page = 1;
+		let reachedBoundary = false;
+
+		for (
+			let windowCount = 0;
+			windowCount < MAX_WINDOW_COUNT && !reachedBoundary;
+			windowCount++
+		) {
+			const pageNumbers = Array.from(
+				{ length: WINDOW_SIZE },
+				(_, i) => page + i,
+			);
+			const settledResponses = await Promise.allSettled(
+				pageNumbers.map((pageNumber) => fetchPage(pageNumber)),
+			);
+
+			const fulfilledResponses: Awaited<ReturnType<typeof fetchPage>>[] = [];
+			settledResponses.forEach((settled, index) => {
+				if (settled.status === 'fulfilled') {
+					fulfilledResponses.push(settled.value);
+					return;
+				}
+				this.logger.error('GitHub 활동 페이지 조회에 실패했습니다.', {
+					page: pageNumbers[index],
+					error: settled.reason,
+				});
+			});
+
+			if (fulfilledResponses.length === 0) {
+				throw (settledResponses[0] as PromiseRejectedResult).reason;
+			}
+
+			for (const { data: events } of fulfilledResponses) {
+				for (const rawEvent of events) {
+					const eventDto = GithubEventResponseDto.of(rawEvent);
+					if (!eventDto.type) {
+						continue;
+					}
+					if (this.hasValidationError(eventDto, eventDto.type.name)) {
+						continue;
+					}
+
+					let activityAt: Temporal.Instant;
+					try {
+						activityAt = Temporal.Instant.from(eventDto.createdAt);
+					} catch (error) {
+						this.logger.error('GithubEvent createdAt 파싱에 실패했습니다.', {
+							createdAt: eventDto.createdAt,
+							error,
+						});
+						continue;
+					}
+
+					if (Temporal.Instant.compare(activityAt, endedAt) >= 0) {
+						continue;
+					}
+					if (Temporal.Instant.compare(activityAt, startedAt) < 0) {
+						reachedBoundary = true;
+						continue;
+					}
+
+					eventDtos.push(eventDto);
+				}
+			}
+
+			const lastResult = settledResponses[settledResponses.length - 1];
+			if (lastResult.status === 'fulfilled' && lastResult.value.data.length === 0) {
+				break;
+			}
+
+			page += WINDOW_SIZE;
+		}
+
+		return eventDtos;
 	}
 
 	private hasValidationError(payload: object, eventType: string): boolean {

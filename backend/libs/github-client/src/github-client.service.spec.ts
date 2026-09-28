@@ -109,13 +109,19 @@ describe('GithubClientService', () => {
 		const startedAt = Temporal.Instant.from('2026-09-28T00:00:00.000Z');
 		const endedAt = Temporal.Instant.from('2026-09-29T00:00:00.000Z');
 
-		function mockEventsResponse(events: unknown[]) {
-			fetchMock.mockResolvedValueOnce(
-				new Response(JSON.stringify(events), {
-					status: 200,
-					headers: { 'content-type': 'application/json' },
-				}),
-			);
+		function jsonResponse(events: unknown[]) {
+			return new Response(JSON.stringify(events), {
+				status: 200,
+				headers: { 'content-type': 'application/json' },
+			});
+		}
+
+		// window(3페이지 동시 요청) 첫 페이지에만 이벤트를 주고, 나머지 두 페이지는
+		// 빈 배열로 채워 "더 이상 데이터 없음"으로 즉시 종료되게 한다.
+		function mockEventsResponse(firstPageEvents: unknown[]) {
+			fetchMock.mockResolvedValueOnce(jsonResponse(firstPageEvents));
+			fetchMock.mockResolvedValueOnce(jsonResponse([]));
+			fetchMock.mockResolvedValueOnce(jsonResponse([]));
 		}
 
 		it('PushEvent의 커밋들을 커밋별 개별 COMMIT 활동으로 반환한다', async () => {
@@ -480,14 +486,161 @@ describe('GithubClientService', () => {
 			expect(logger.error).toHaveBeenCalledTimes(4);
 		});
 
-		it('GitHub API 실패 시 에러를 그대로 전파한다', async () => {
+		it('window(3페이지) 중 마지막 페이지가 비어있으면 다음 window를 요청하지 않는다', async () => {
 			// given
+			fetchMock.mockResolvedValueOnce(
+				jsonResponse([
+					{
+						id: '20',
+						type: 'IssuesEvent',
+						repo: { id: 1, name: 'octocat/repo', url: '' },
+						payload: {
+							action: 'opened',
+							issue: { node_id: 'page1-issue', title: '1페이지' },
+						},
+						public: true,
+						created_at: '2026-09-28T10:00:00Z',
+					},
+				]),
+			);
+			fetchMock.mockResolvedValueOnce(
+				jsonResponse([
+					{
+						id: '21',
+						type: 'IssuesEvent',
+						repo: { id: 1, name: 'octocat/repo', url: '' },
+						payload: {
+							action: 'opened',
+							issue: { node_id: 'page2-issue', title: '2페이지' },
+						},
+						public: true,
+						created_at: '2026-09-28T11:00:00Z',
+					},
+				]),
+			);
+			fetchMock.mockResolvedValueOnce(jsonResponse([])); // page 3: 데이터 소진
+
+			// when
+			const result = await service.getActivities(
+				'access-token',
+				'octocat',
+				startedAt,
+				endedAt,
+			);
+
+			// then
+			expect(fetchMock).toHaveBeenCalledTimes(3);
+			expect(result.issues).toEqual([
+				expect.objectContaining({ githubNodeId: 'page1-issue' }),
+				expect.objectContaining({ githubNodeId: 'page2-issue' }),
+			]);
+			const pageParams = fetchMock.mock.calls.map(
+				([url]) => new URL(url as string).searchParams.get('page'),
+			);
+			expect(pageParams).toEqual(['1', '2', '3']);
+		});
+
+		it('window(3페이지) 전부 데이터가 있고 아직 range 경계 전이면 다음 window를 요청한다', async () => {
+			// given: window 1(page 1~3)은 전부 range 안, window 2의 page 4에서 range
+			// 밖(오래된) 이벤트를 만나 그 즉시 종료 — window 3(page 7~9)은 요청되지 않는다.
+			const validEvent = (id: string, nodeId: string) => ({
+				id,
+				type: 'IssuesEvent',
+				repo: { id: 1, name: 'octocat/repo', url: '' },
+				payload: { action: 'opened', issue: { node_id: nodeId, title: '제목' } },
+				public: true,
+				created_at: '2026-09-28T10:00:00Z',
+			});
+			fetchMock.mockResolvedValueOnce(jsonResponse([validEvent('30', 'p1')]));
+			fetchMock.mockResolvedValueOnce(jsonResponse([validEvent('31', 'p2')]));
+			fetchMock.mockResolvedValueOnce(jsonResponse([validEvent('32', 'p3')]));
+			fetchMock.mockResolvedValueOnce(
+				jsonResponse([
+					{
+						...validEvent('33', 'before-range'),
+						created_at: '2026-09-27T00:00:00Z',
+					},
+				]),
+			);
+			fetchMock.mockResolvedValueOnce(jsonResponse([]));
+			fetchMock.mockResolvedValueOnce(jsonResponse([]));
+
+			// when
+			const result = await service.getActivities(
+				'access-token',
+				'octocat',
+				startedAt,
+				endedAt,
+			);
+
+			// then
+			expect(fetchMock).toHaveBeenCalledTimes(6);
+			expect(result.issues).toEqual([
+				expect.objectContaining({ githubNodeId: 'p1' }),
+				expect.objectContaining({ githubNodeId: 'p2' }),
+				expect.objectContaining({ githubNodeId: 'p3' }),
+			]);
+		});
+
+		it('window 내 일부 페이지만 실패하면 로그만 남기고 성공한 페이지로 계속 진행한다', async () => {
+			// given
+			// 401처럼 재시도 없이 즉시 실패하는 상태코드를 써서 테스트를 빠르게 유지한다.
+			fetchMock.mockResolvedValueOnce(
+				jsonResponse([
+					{
+						id: '40',
+						type: 'IssuesEvent',
+						repo: { id: 1, name: 'octocat/repo', url: '' },
+						payload: {
+							action: 'opened',
+							issue: { node_id: 'ok-page', title: '제목' },
+						},
+						public: true,
+						created_at: '2026-09-28T10:00:00Z',
+					},
+				]),
+			);
 			fetchMock.mockResolvedValueOnce(
 				new Response(JSON.stringify({ message: 'Requires authentication' }), {
 					status: 401,
 					headers: { 'content-type': 'application/json' },
 				}),
 			);
+			fetchMock.mockResolvedValueOnce(jsonResponse([])); // page 3: 데이터 소진
+
+			// when
+			const result = await service.getActivities(
+				'access-token',
+				'octocat',
+				startedAt,
+				endedAt,
+			);
+
+			// then
+			expect(result.issues).toEqual([
+				expect.objectContaining({ githubNodeId: 'ok-page' }),
+			]);
+			expect(logger.error).toHaveBeenCalledWith(
+				'GitHub 활동 페이지 조회에 실패했습니다.',
+				expect.objectContaining({
+					page: 2,
+					error: expect.objectContaining({ status: 401 }),
+				}),
+			);
+		});
+
+		it('GitHub API 실패 시 에러를 그대로 전파한다', async () => {
+			// given
+			// window(3페이지)를 동시에 요청하므로 셋 다 실패 응답을 준비해야
+			// mock되지 않은 호출로 인한 불안정성이 생기지 않는다.
+			const unauthorizedResponse = () =>
+				new Response(JSON.stringify({ message: 'Requires authentication' }), {
+					status: 401,
+					headers: { 'content-type': 'application/json' },
+				});
+			fetchMock.mockResolvedValueOnce(unauthorizedResponse());
+			fetchMock.mockResolvedValueOnce(unauthorizedResponse());
+			fetchMock.mockResolvedValueOnce(unauthorizedResponse());
 
 			// when & then
 			await expect(
