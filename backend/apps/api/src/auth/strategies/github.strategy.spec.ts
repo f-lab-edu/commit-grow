@@ -32,9 +32,7 @@ describe('GithubStrategy Unit Test', () => {
 			const logger = createMockLogger();
 
 			// then
-			expect(
-				() => new GithubStrategy(config, authService, logger),
-			).toThrow();
+			expect(() => new GithubStrategy(config, authService, logger)).toThrow();
 		});
 	});
 

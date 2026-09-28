@@ -1,11 +1,14 @@
 import { EnviromentUtil } from '@app/environment/EnviromentUtil';
 import { generatePinoLoggerModule } from '@app/logger/generatePinoLoggerModule';
-import { MikroOrmModule } from '@mikro-orm/nestjs';
+import { MikroOrmModule, type MikroOrmModuleOptions } from '@mikro-orm/nestjs';
 import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import testMikroOrmConfig from 'test-mikro-orm.config';
 
-export function createTestingModule(imports: any[]) {
+export function createTestingModule(
+	imports: any[],
+	mikroOrmOverrides: Partial<MikroOrmModuleOptions> = {},
+) {
 	return Test.createTestingModule({
 		imports: [
 			ConfigModule.forRoot({
@@ -16,6 +19,7 @@ export function createTestingModule(imports: any[]) {
 			MikroOrmModule.forRoot({
 				...testMikroOrmConfig,
 				autoLoadEntities: true,
+				...mikroOrmOverrides,
 			}),
 			...imports,
 		],
