@@ -15,6 +15,9 @@ describe('GithubClientService', () => {
 		clientId: 'client-id',
 		clientSecret: 'client-secret',
 		callbackURL: 'http://localhost/callback',
+		maxRetries: 2,
+		eventsPerPage: 100,
+		requestTimeoutMs: 1000,
 	};
 	const expectedAuthorizationHeader = `Basic ${Buffer.from(
 		`${oauthGithubConfig.clientId}:${oauthGithubConfig.clientSecret}`,
@@ -447,6 +450,70 @@ describe('GithubClientService', () => {
 			expect(logger.error).toHaveBeenCalledTimes(4);
 		});
 
+		it('PushEvent payload.commits가 배열이 아니면 빈 push로 취급하지 않고 검증 실패로 로그 남기고 skip한다', async () => {
+			// given
+			mockEventsResponse([
+				{
+					id: '14',
+					type: 'PushEvent',
+					repo: OCTOCAT_REPO,
+					payload: { commits: 'not-an-array' },
+					public: true,
+					created_at: '2026-09-28T10:00:00Z',
+				},
+			]);
+
+			// when
+			const result = await service.getActivities(
+				'access-token',
+				'octocat',
+				startedAt,
+				endedAt,
+			);
+
+			// then
+			expect(result).toEqual({
+				commits: [],
+				issues: [],
+				pullRequests: [],
+				codeReviews: [],
+			});
+			expect(logger.error).toHaveBeenCalledTimes(1);
+		});
+
+		it('이벤트 payload가 객체가 아니면 검증 실패로 로그 남기고 skip한다', async () => {
+			// given
+			mockEventsResponse([
+				{
+					id: '15',
+					type: 'IssuesEvent',
+					repo: OCTOCAT_REPO,
+					payload: 'not-an-object',
+					public: true,
+					created_at: '2026-09-28T10:00:00Z',
+				},
+			]);
+
+			// when
+			const result = await service.getActivities(
+				'access-token',
+				'octocat',
+				startedAt,
+				endedAt,
+			);
+
+			// then
+			expect(result).toEqual({
+				commits: [],
+				issues: [],
+				pullRequests: [],
+				codeReviews: [],
+			});
+			expect(logger.error).toHaveBeenCalledWith(
+				'IssuesEvent payload 검증에 실패했습니다.',
+			);
+		});
+
 		it('window(3페이지) 중 마지막 페이지가 비어있으면 다음 window를 요청하지 않는다', async () => {
 			// given
 			fetchMock.mockResolvedValueOnce(
@@ -577,6 +644,9 @@ function createService(
 		clientId: string;
 		clientSecret: string;
 		callbackURL: string;
+		maxRetries: number;
+		eventsPerPage: number;
+		requestTimeoutMs: number;
 	},
 	logger,
 ) {

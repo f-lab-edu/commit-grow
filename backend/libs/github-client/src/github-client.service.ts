@@ -4,7 +4,7 @@ import { OAuthGithubEnvironment } from '@app/environment/schema/OAuthGithubEnvir
 import { Temporal } from '@js-temporal/polyfill';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { IsNotEmpty, IsString, validateSync } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString, validateSync } from 'class-validator';
 import { Logger } from 'nestjs-pino';
 import { Octokit } from 'octokit';
 import { GitActivityDto } from './dto/activity/GitActivity.dto';
@@ -16,8 +16,9 @@ import { GithubPushEventPayloadDto } from './dto/activity/GithubPushEventPayload
 import { GithubEventType } from './enum/GithubEventType';
 
 const WINDOW_SIZE = 3;
-const MAX_WINDOW_COUNT = 2;
-const MAX_RETRIES = 2;
+// ponytail: 부분 실패를 허용하면 "마지막 페이지가 비었는지" 종료 신호를
+// 계속 못 얻어 무한정 다음 window로 넘어갈 수 있어 반복 상한을 둔다.
+const MAX_WINDOW_COUNT = 10;
 
 type EventsPageResponse = Awaited<
 	ReturnType<
@@ -44,6 +45,15 @@ export class GithubClientService {
 	@IsString()
 	private readonly clientSecret: string;
 
+	@IsNumber()
+	private readonly maxRetries: number;
+
+	@IsNumber()
+	private readonly eventsPerPage: number;
+
+	@IsNumber()
+	private readonly requestTimeoutMs: number;
+
 	private readonly otokit: Octokit;
 
 	private readonly basicAuthorizationHeader: string;
@@ -56,11 +66,14 @@ export class GithubClientService {
 			configService.getOrThrow<OAuthGithubEnvironment>('oauthGithub');
 		this.clientId = oauthGithubConfig.clientId;
 		this.clientSecret = oauthGithubConfig.clientSecret;
+		this.maxRetries = oauthGithubConfig.maxRetries;
+		this.eventsPerPage = oauthGithubConfig.eventsPerPage;
+		this.requestTimeoutMs = oauthGithubConfig.requestTimeoutMs;
 		this.basicAuthorizationHeader = `Basic ${Buffer.from(
 			`${this.clientId}:${this.clientSecret}`,
 		).toString('base64')}`;
 
-		this.otokit = new Octokit({ retry: { retries: MAX_RETRIES } });
+		this.otokit = new Octokit({ retry: { retries: this.maxRetries } });
 
 		this.validate();
 	}
@@ -102,54 +115,109 @@ export class GithubClientService {
 		);
 
 		for (const eventDto of eventDtos) {
-			const rawPayload =
-				eventDto.payload as unknown as GithubActivityEventPayload;
-
-			if (eventDto.type === GithubEventType.PUSH) {
-				const pushPayload = GithubPushEventPayloadDto.of(rawPayload);
-				if (this.hasValidationError(pushPayload, eventDto.type.name)) {
-					continue;
-				}
-				resultDto.addByPushPayload(pushPayload, eventDto);
+			// fetchEventDtosInRange가 type 없는 이벤트를 이미 걸러내므로 항상 존재한다.
+			const eventTypeName = eventDto.type!.name;
+			if (!this.isPlainObject(eventDto.payload)) {
+				this.logger.error(`${eventTypeName} payload 검증에 실패했습니다.`);
+				continue;
 			}
+			const rawPayload = eventDto.payload as GithubActivityEventPayload;
 
-			if (
-				eventDto.type === GithubEventType.ISSUES &&
-				rawPayload.action === 'opened'
-			) {
-				const issuesPayload = GithubIssuesEventPayloadDto.of(rawPayload);
-				if (this.hasValidationError(issuesPayload, eventDto.type.name)) {
-					continue;
-				}
-				resultDto.addByIssuesPayload(issuesPayload, eventDto);
-			}
+			switch (eventDto.type) {
+				case GithubEventType.PUSH:
+					this.handlePush(resultDto, eventDto, eventTypeName, rawPayload);
+					break;
 
-			if (
-				eventDto.type === GithubEventType.PULL_REQUEST &&
-				rawPayload.action === 'opened'
-			) {
-				const pullRequestPayload =
-					GithubPullRequestEventPayloadDto.of(rawPayload);
-				if (this.hasValidationError(pullRequestPayload, eventDto.type.name)) {
-					continue;
-				}
-				resultDto.addByPullRequestPayload(pullRequestPayload, eventDto);
-			}
+				case GithubEventType.ISSUES:
+					this.handleIssues(resultDto, eventDto, eventTypeName, rawPayload);
+					break;
 
-			if (
-				eventDto.type === GithubEventType.PULL_REQUEST_REVIEW &&
-				rawPayload.action === 'created'
-			) {
-				const reviewPayload =
-					GithubPullRequestReviewEventPayloadDto.of(rawPayload);
-				if (this.hasValidationError(reviewPayload, eventDto.type.name)) {
-					continue;
-				}
-				resultDto.addByPullRequestReviewPayload(reviewPayload, eventDto);
+				case GithubEventType.PULL_REQUEST:
+					this.handlePullRequest(
+						resultDto,
+						eventDto,
+						eventTypeName,
+						rawPayload,
+					);
+					break;
+
+				case GithubEventType.PULL_REQUEST_REVIEW:
+					this.handlePullRequestReview(
+						resultDto,
+						eventDto,
+						eventTypeName,
+						rawPayload,
+					);
+					break;
 			}
 		}
 
 		return resultDto;
+	}
+
+	private isPlainObject(value: unknown): boolean {
+		return value !== null && typeof value === 'object' && !Array.isArray(value);
+	}
+
+	private handlePush(
+		resultDto: GitActivityDto,
+		eventDto: GithubEventResponseDto,
+		eventTypeName: string,
+		payload: GithubActivityEventPayload,
+	) {
+		const pushPayload = GithubPushEventPayloadDto.of(payload);
+		if (this.hasValidationError(pushPayload, eventTypeName)) {
+			return;
+		}
+		resultDto.addByPushPayload(pushPayload, eventDto);
+	}
+
+	private handleIssues(
+		resultDto: GitActivityDto,
+		eventDto: GithubEventResponseDto,
+		eventTypeName: string,
+		payload: GithubActivityEventPayload,
+	) {
+		if (payload.action !== 'opened') {
+			return;
+		}
+		const issuesPayload = GithubIssuesEventPayloadDto.of(payload);
+		if (this.hasValidationError(issuesPayload, eventTypeName)) {
+			return;
+		}
+		resultDto.addByIssuesPayload(issuesPayload, eventDto);
+	}
+
+	private handlePullRequest(
+		resultDto: GitActivityDto,
+		eventDto: GithubEventResponseDto,
+		eventTypeName: string,
+		payload: GithubActivityEventPayload,
+	) {
+		if (payload.action !== 'opened') {
+			return;
+		}
+		const pullRequestPayload = GithubPullRequestEventPayloadDto.of(payload);
+		if (this.hasValidationError(pullRequestPayload, eventTypeName)) {
+			return;
+		}
+		resultDto.addByPullRequestPayload(pullRequestPayload, eventDto);
+	}
+
+	private handlePullRequestReview(
+		resultDto: GitActivityDto,
+		eventDto: GithubEventResponseDto,
+		eventTypeName: string,
+		payload: GithubActivityEventPayload,
+	) {
+		if (payload.action !== 'created') {
+			return;
+		}
+		const reviewPayload = GithubPullRequestReviewEventPayloadDto.of(payload);
+		if (this.hasValidationError(reviewPayload, eventTypeName)) {
+			return;
+		}
+		resultDto.addByPullRequestReviewPayload(reviewPayload, eventDto);
 	}
 
 	private async fetchEventDtosInRange(
@@ -164,9 +232,9 @@ export class GithubClientService {
 			this.otokit.rest.activity.listPublicEventsForUser({
 				username,
 				page: pageNumber,
-				per_page: 100,
+				per_page: this.eventsPerPage,
 				headers: { authorization: `token ${accessToken}` },
-				request: { signal: AbortSignal.timeout(1000) },
+				request: { signal: AbortSignal.timeout(this.requestTimeoutMs) },
 			});
 
 		let page = 1;

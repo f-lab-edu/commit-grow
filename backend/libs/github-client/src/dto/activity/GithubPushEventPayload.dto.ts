@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsNotEmpty, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsNotEmpty, IsString, ValidateNested } from 'class-validator';
 
 class GithubCommitItem {
 	@IsString()
@@ -21,6 +21,7 @@ class GithubCommitItem {
 }
 
 export class GithubPushEventPayloadDto {
+	@IsArray()
 	@ValidateNested({ each: true })
 	@Type(() => GithubCommitItem)
 	readonly commits: GithubCommitItem[];
@@ -29,9 +30,14 @@ export class GithubPushEventPayloadDto {
 		this.commits = commits;
 	}
 
-	static of(raw: { commits?: { sha?: string; message?: string }[] }) {
+	static of(raw: {
+		commits?: { sha?: string; message?: string }[] | null | undefined;
+	}) {
+		const commits = raw.commits;
 		return new GithubPushEventPayloadDto(
-			(raw.commits ?? []).map((commit) => GithubCommitItem.of(commit)),
+			Array.isArray(commits)
+				? commits.map((commit) => GithubCommitItem.of(commit))
+				: ((commits ?? []) as GithubCommitItem[]),
 		);
 	}
 }
