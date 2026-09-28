@@ -124,22 +124,86 @@ describe('GithubClientService', () => {
 			fetchMock.mockResolvedValueOnce(jsonResponse([]));
 		}
 
+		const OCTOCAT_REPO = { id: 1, name: 'octocat/repo', url: '' };
+
+		function pushEvent(
+			id: string,
+			createdAt: string,
+			commits: { sha: string; message: string }[],
+		) {
+			return {
+				id,
+				type: 'PushEvent',
+				repo: OCTOCAT_REPO,
+				payload: { commits },
+				public: true,
+				created_at: createdAt,
+			};
+		}
+
+		function issuesEvent(
+			id: string,
+			createdAt: string | null,
+			nodeId: string,
+			title: string,
+			action = 'opened',
+		) {
+			return {
+				id,
+				type: 'IssuesEvent',
+				repo: OCTOCAT_REPO,
+				payload: { action, issue: { node_id: nodeId, title } },
+				public: true,
+				created_at: createdAt,
+			};
+		}
+
+		function pullRequestEvent(
+			id: string,
+			createdAt: string,
+			nodeId: string,
+			title: string,
+			action = 'opened',
+		) {
+			return {
+				id,
+				type: 'PullRequestEvent',
+				repo: OCTOCAT_REPO,
+				payload: { action, pull_request: { node_id: nodeId, title } },
+				public: true,
+				created_at: createdAt,
+			};
+		}
+
+		function pullRequestReviewEvent(
+			id: string,
+			createdAt: string,
+			prNodeId: string,
+			prTitle: string,
+			reviewNodeId: string,
+			action = 'created',
+		) {
+			return {
+				id,
+				type: 'PullRequestReviewEvent',
+				repo: OCTOCAT_REPO,
+				payload: {
+					action,
+					pull_request: { node_id: prNodeId, title: prTitle },
+					review: { node_id: reviewNodeId },
+				},
+				public: true,
+				created_at: createdAt,
+			};
+		}
+
 		it('PushEvent의 커밋들을 커밋별 개별 COMMIT 활동으로 반환한다', async () => {
 			// given
 			mockEventsResponse([
-				{
-					id: '1',
-					type: 'PushEvent',
-					repo: { id: 1, name: 'octocat/repo', url: '' },
-					payload: {
-						commits: [
-							{ sha: 'sha-1', message: 'feat: 커밋1' },
-							{ sha: 'sha-2', message: 'fix: 커밋2' },
-						],
-					},
-					public: true,
-					created_at: '2026-09-28T10:00:00Z',
-				},
+				pushEvent('1', '2026-09-28T10:00:00Z', [
+					{ sha: 'sha-1', message: 'feat: 커밋1' },
+					{ sha: 'sha-2', message: 'fix: 커밋2' },
+				]),
 			]);
 
 			// when
@@ -177,17 +241,7 @@ describe('GithubClientService', () => {
 		it('IssuesEvent(opened)를 ISSUE 활동으로 반환한다', async () => {
 			// given
 			mockEventsResponse([
-				{
-					id: '2',
-					type: 'IssuesEvent',
-					repo: { id: 1, name: 'octocat/repo', url: '' },
-					payload: {
-						action: 'opened',
-						issue: { node_id: 'issue-node-id', title: '이슈 제목' },
-					},
-					public: true,
-					created_at: '2026-09-28T11:00:00Z',
-				},
+				issuesEvent('2', '2026-09-28T11:00:00Z', 'issue-node-id', '이슈 제목'),
 			]);
 
 			// when
@@ -219,17 +273,7 @@ describe('GithubClientService', () => {
 		it('PullRequestEvent(opened)를 PULL_REQUEST 활동으로 반환한다', async () => {
 			// given
 			mockEventsResponse([
-				{
-					id: '3',
-					type: 'PullRequestEvent',
-					repo: { id: 1, name: 'octocat/repo', url: '' },
-					payload: {
-						action: 'opened',
-						pull_request: { node_id: 'pr-node-id', title: 'PR 제목' },
-					},
-					public: true,
-					created_at: '2026-09-28T12:00:00Z',
-				},
+				pullRequestEvent('3', '2026-09-28T12:00:00Z', 'pr-node-id', 'PR 제목'),
 			]);
 
 			// when
@@ -261,18 +305,13 @@ describe('GithubClientService', () => {
 		it('PullRequestReviewEvent(created)를 CODE_REVIEW 활동으로 반환한다', async () => {
 			// given
 			mockEventsResponse([
-				{
-					id: '4',
-					type: 'PullRequestReviewEvent',
-					repo: { id: 1, name: 'octocat/repo', url: '' },
-					payload: {
-						action: 'created',
-						pull_request: { node_id: 'pr-node-id', title: 'PR 제목' },
-						review: { node_id: 'review-node-id' },
-					},
-					public: true,
-					created_at: '2026-09-28T13:00:00Z',
-				},
+				pullRequestReviewEvent(
+					'4',
+					'2026-09-28T13:00:00Z',
+					'pr-node-id',
+					'PR 제목',
+					'review-node-id',
+				),
 			]);
 
 			// when
@@ -304,32 +343,12 @@ describe('GithubClientService', () => {
 		it('[startedAt, endedAt) 범위 밖 이벤트와 관심 없는 이벤트 타입은 제외한다', async () => {
 			// given
 			mockEventsResponse([
-				{
-					id: '5',
-					type: 'IssuesEvent',
-					repo: { id: 1, name: 'octocat/repo', url: '' },
-					payload: {
-						action: 'opened',
-						issue: { node_id: 'before-range', title: '범위 이전' },
-					},
-					public: true,
-					created_at: '2026-09-27T23:59:59Z',
-				},
-				{
-					id: '6',
-					type: 'IssuesEvent',
-					repo: { id: 1, name: 'octocat/repo', url: '' },
-					payload: {
-						action: 'opened',
-						issue: { node_id: 'after-range', title: '범위 이후' },
-					},
-					public: true,
-					created_at: '2026-09-29T00:00:00Z',
-				},
+				issuesEvent('5', '2026-09-27T23:59:59Z', 'before-range', '범위 이전'),
+				issuesEvent('6', '2026-09-29T00:00:00Z', 'after-range', '범위 이후'),
 				{
 					id: '7',
 					type: 'WatchEvent',
-					repo: { id: 1, name: 'octocat/repo', url: '' },
+					repo: OCTOCAT_REPO,
 					payload: {},
 					public: true,
 					created_at: '2026-09-28T10:00:00Z',
@@ -355,19 +374,7 @@ describe('GithubClientService', () => {
 
 		it('이벤트 최상위 필드(created_at 등)가 누락되면 검증 실패로 로그 남기고 skip한다', async () => {
 			// given
-			mockEventsResponse([
-				{
-					id: '12',
-					type: 'IssuesEvent',
-					repo: { id: 1, name: 'octocat/repo', url: '' },
-					payload: {
-						action: 'opened',
-						issue: { node_id: 'issue-1', title: '제목' },
-					},
-					public: true,
-					created_at: null,
-				},
-			]);
+			mockEventsResponse([issuesEvent('12', null, 'issue-1', '제목')]);
 
 			// when
 			const result = await service.getActivities(
@@ -390,17 +397,7 @@ describe('GithubClientService', () => {
 		it('created_at이 파싱 불가능한 형식이면 로그 남기고 skip한다', async () => {
 			// given
 			mockEventsResponse([
-				{
-					id: '13',
-					type: 'IssuesEvent',
-					repo: { id: 1, name: 'octocat/repo', url: '' },
-					payload: {
-						action: 'opened',
-						issue: { node_id: 'issue-1', title: '제목' },
-					},
-					public: true,
-					created_at: 'not-a-valid-date',
-				},
+				issuesEvent('13', 'not-a-valid-date', 'issue-1', '제목'),
 			]);
 
 			// when
@@ -424,48 +421,12 @@ describe('GithubClientService', () => {
 		it('payload 필수 필드가 누락된 이벤트는 검증 실패로 로그 남기고 skip한다', async () => {
 			// given
 			mockEventsResponse([
-				{
-					id: '8',
-					type: 'PushEvent',
-					repo: { id: 1, name: 'octocat/repo', url: '' },
-					payload: { commits: [{ sha: '', message: 'no sha' }] },
-					public: true,
-					created_at: '2026-09-28T10:00:00Z',
-				},
-				{
-					id: '9',
-					type: 'IssuesEvent',
-					repo: { id: 1, name: 'octocat/repo', url: '' },
-					payload: {
-						action: 'opened',
-						issue: { node_id: 'issue-1', title: '' },
-					},
-					public: true,
-					created_at: '2026-09-28T10:00:00Z',
-				},
-				{
-					id: '10',
-					type: 'PullRequestEvent',
-					repo: { id: 1, name: 'octocat/repo', url: '' },
-					payload: {
-						action: 'opened',
-						pull_request: { node_id: '', title: 'PR' },
-					},
-					public: true,
-					created_at: '2026-09-28T10:00:00Z',
-				},
-				{
-					id: '11',
-					type: 'PullRequestReviewEvent',
-					repo: { id: 1, name: 'octocat/repo', url: '' },
-					payload: {
-						action: 'created',
-						pull_request: { node_id: 'pr-1', title: 'PR' },
-						review: { node_id: '' },
-					},
-					public: true,
-					created_at: '2026-09-28T10:00:00Z',
-				},
+				pushEvent('8', '2026-09-28T10:00:00Z', [
+					{ sha: '', message: 'no sha' },
+				]),
+				issuesEvent('9', '2026-09-28T10:00:00Z', 'issue-1', ''),
+				pullRequestEvent('10', '2026-09-28T10:00:00Z', '', 'PR'),
+				pullRequestReviewEvent('11', '2026-09-28T10:00:00Z', 'pr-1', 'PR', ''),
 			]);
 
 			// when
@@ -490,32 +451,12 @@ describe('GithubClientService', () => {
 			// given
 			fetchMock.mockResolvedValueOnce(
 				jsonResponse([
-					{
-						id: '20',
-						type: 'IssuesEvent',
-						repo: { id: 1, name: 'octocat/repo', url: '' },
-						payload: {
-							action: 'opened',
-							issue: { node_id: 'page1-issue', title: '1페이지' },
-						},
-						public: true,
-						created_at: '2026-09-28T10:00:00Z',
-					},
+					issuesEvent('20', '2026-09-28T10:00:00Z', 'page1-issue', '1페이지'),
 				]),
 			);
 			fetchMock.mockResolvedValueOnce(
 				jsonResponse([
-					{
-						id: '21',
-						type: 'IssuesEvent',
-						repo: { id: 1, name: 'octocat/repo', url: '' },
-						payload: {
-							action: 'opened',
-							issue: { node_id: 'page2-issue', title: '2페이지' },
-						},
-						public: true,
-						created_at: '2026-09-28T11:00:00Z',
-					},
+					issuesEvent('21', '2026-09-28T11:00:00Z', 'page2-issue', '2페이지'),
 				]),
 			);
 			fetchMock.mockResolvedValueOnce(jsonResponse([])); // page 3: 데이터 소진
@@ -534,8 +475,8 @@ describe('GithubClientService', () => {
 				expect.objectContaining({ githubNodeId: 'page1-issue' }),
 				expect.objectContaining({ githubNodeId: 'page2-issue' }),
 			]);
-			const pageParams = fetchMock.mock.calls.map(
-				([url]) => new URL(url as string).searchParams.get('page'),
+			const pageParams = fetchMock.mock.calls.map(([url]) =>
+				new URL(url as string).searchParams.get('page'),
 			);
 			expect(pageParams).toEqual(['1', '2', '3']);
 		});
@@ -543,23 +484,14 @@ describe('GithubClientService', () => {
 		it('window(3페이지) 전부 데이터가 있고 아직 range 경계 전이면 다음 window를 요청한다', async () => {
 			// given: window 1(page 1~3)은 전부 range 안, window 2의 page 4에서 range
 			// 밖(오래된) 이벤트를 만나 그 즉시 종료 — window 3(page 7~9)은 요청되지 않는다.
-			const validEvent = (id: string, nodeId: string) => ({
-				id,
-				type: 'IssuesEvent',
-				repo: { id: 1, name: 'octocat/repo', url: '' },
-				payload: { action: 'opened', issue: { node_id: nodeId, title: '제목' } },
-				public: true,
-				created_at: '2026-09-28T10:00:00Z',
-			});
+			const validEvent = (id: string, nodeId: string) =>
+				issuesEvent(id, '2026-09-28T10:00:00Z', nodeId, '제목');
 			fetchMock.mockResolvedValueOnce(jsonResponse([validEvent('30', 'p1')]));
 			fetchMock.mockResolvedValueOnce(jsonResponse([validEvent('31', 'p2')]));
 			fetchMock.mockResolvedValueOnce(jsonResponse([validEvent('32', 'p3')]));
 			fetchMock.mockResolvedValueOnce(
 				jsonResponse([
-					{
-						...validEvent('33', 'before-range'),
-						created_at: '2026-09-27T00:00:00Z',
-					},
+					issuesEvent('33', '2026-09-27T00:00:00Z', 'before-range', '제목'),
 				]),
 			);
 			fetchMock.mockResolvedValueOnce(jsonResponse([]));
@@ -587,17 +519,7 @@ describe('GithubClientService', () => {
 			// 401처럼 재시도 없이 즉시 실패하는 상태코드를 써서 테스트를 빠르게 유지한다.
 			fetchMock.mockResolvedValueOnce(
 				jsonResponse([
-					{
-						id: '40',
-						type: 'IssuesEvent',
-						repo: { id: 1, name: 'octocat/repo', url: '' },
-						payload: {
-							action: 'opened',
-							issue: { node_id: 'ok-page', title: '제목' },
-						},
-						public: true,
-						created_at: '2026-09-28T10:00:00Z',
-					},
+					issuesEvent('40', '2026-09-28T10:00:00Z', 'ok-page', '제목'),
 				]),
 			);
 			fetchMock.mockResolvedValueOnce(
