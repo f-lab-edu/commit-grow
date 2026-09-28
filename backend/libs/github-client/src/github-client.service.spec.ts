@@ -381,6 +381,40 @@ describe('GithubClientService', () => {
 			expect(logger.error).toHaveBeenCalledTimes(1);
 		});
 
+		it('created_at이 파싱 불가능한 형식이면 로그 남기고 skip한다', async () => {
+			// given
+			mockEventsResponse([
+				{
+					id: '13',
+					type: 'IssuesEvent',
+					repo: { id: 1, name: 'octocat/repo', url: '' },
+					payload: {
+						action: 'opened',
+						issue: { node_id: 'issue-1', title: '제목' },
+					},
+					public: true,
+					created_at: 'not-a-valid-date',
+				},
+			]);
+
+			// when
+			const result = await service.getActivities(
+				'access-token',
+				'octocat',
+				startedAt,
+				endedAt,
+			);
+
+			// then
+			expect(result).toEqual({
+				commits: [],
+				issues: [],
+				pullRequests: [],
+				codeReviews: [],
+			});
+			expect(logger.error).toHaveBeenCalledTimes(1);
+		});
+
 		it('payload 필수 필드가 누락된 이벤트는 검증 실패로 로그 남기고 skip한다', async () => {
 			// given
 			mockEventsResponse([

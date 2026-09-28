@@ -83,6 +83,8 @@ export class GithubClientService {
 		endedAt: Temporal.Instant,
 	): Promise<GitActivityDto> {
 		const resultDto = new GitActivityDto();
+		// ponytail: 첫 페이지(기본 30건)만 조회. 기간 내 활동이 그보다 많은 극단
+		// 케이스가 발견되면 페이지네이션 추가
 		const { data: events } =
 			await this.otokit.rest.activity.listPublicEventsForUser({
 				username,
@@ -98,7 +100,16 @@ export class GithubClientService {
 				if (this.hasValidationError(eventDto, eventDto.type.name)) {
 					return null;
 				}
-				const activityAt = Temporal.Instant.from(eventDto.createdAt);
+				let activityAt: Temporal.Instant;
+				try {
+					activityAt = Temporal.Instant.from(eventDto.createdAt);
+				} catch (error) {
+					this.logger.error('GithubEvent createdAt 파싱에 실패했습니다.', {
+						createdAt: eventDto.createdAt,
+						error,
+					});
+					return null;
+				}
 				if (
 					Temporal.Instant.compare(activityAt, startedAt) < 0 ||
 					Temporal.Instant.compare(activityAt, endedAt) >= 0

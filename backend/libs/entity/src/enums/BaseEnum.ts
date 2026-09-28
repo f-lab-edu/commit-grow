@@ -19,10 +19,13 @@ export abstract class BaseEnum<_T extends BaseEnum<_T>> {
 	}
 
 	static valueOf<T extends BaseEnum<T>>(
-		this: { prototype: T } & { values(): readonly T[] },
+		this: { prototype: T } & {
+			values(): readonly T[];
+			valueOfOrUndefined(name: string): T | undefined;
+		},
 		name: string,
 	): T {
-		const found = this.values().find((v) => v.name === name);
+		const found = this.valueOfOrUndefined(name);
 		if (!found) {
 			throw new Error(`존재하지 않는 값입니다. value=${name}`);
 		}
