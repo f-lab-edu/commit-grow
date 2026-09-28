@@ -16,7 +16,6 @@ import { GithubPushEventPayloadDto } from './dto/activity/GithubPushEventPayload
 import { GithubEventType } from './enum/GithubEventType';
 
 const WINDOW_SIZE = 3;
-const MAX_WINDOW_COUNT = 10;
 
 type EventsPageResponse = Awaited<
 	ReturnType<
@@ -238,11 +237,7 @@ export class GithubClientService {
 		let page = 1;
 		let reachedBoundary = false;
 
-		for (
-			let windowCount = 0;
-			windowCount < MAX_WINDOW_COUNT && !reachedBoundary;
-			windowCount++
-		) {
+		while (!reachedBoundary) {
 			const pageNumbers = Array.from(
 				{ length: WINDOW_SIZE },
 				(_, i) => page + i,
